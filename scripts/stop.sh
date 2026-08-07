@@ -11,11 +11,11 @@ kill_port() {
   local pids
   pids="$(lsof -tiTCP:"$port" -sTCP:LISTEN 2>/dev/null || true)"
   if [[ -n "$pids" ]]; then
-    echo "→ kill porta $port (PID: $pids)"
+    echo "→ killing port $port (PID: $pids)"
     # shellcheck disable=SC2086
     kill -9 $pids 2>/dev/null || true
   else
-    echo "→ porta $port già libera"
+    echo "→ port $port already free"
   fi
 }
 
@@ -27,4 +27,4 @@ pkill -9 -f "$ROOT/apps/web.*vite" 2>/dev/null || true
 sleep 0.3
 kill_port "$API_PORT"
 kill_port "$WEB_PORT"
-echo "fatto"
+echo "done"

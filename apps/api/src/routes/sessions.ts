@@ -93,7 +93,7 @@ sessionsRoutes.post("/", async (c) => {
       agentId,
       cwd: body.cwd,
       model,
-      title: mode === "gauntlet" ? "Gauntlet session" : "Nuova sessione",
+      title: mode === "gauntlet" ? "Gauntlet session" : "New session",
       createdAt: now,
       updatedAt: now,
       status: "idle",
@@ -221,7 +221,7 @@ sessionsRoutes.post("/:id/messages", async (c) => {
         });
 
         if (
-          session.title === "Nuova sessione" ||
+          session.title === "New session" ||
           session.title === "Gauntlet session"
         ) {
           const prefix = mode === "gauntlet" ? "Gauntlet: " : "";
@@ -289,7 +289,7 @@ sessionsRoutes.post("/:id/messages", async (c) => {
         if (doneStatus === "error") {
           send({
             type: "error",
-            message: `Run fallita (${result.id})`,
+            message: `Run failed (${result.id})`,
           });
         }
 

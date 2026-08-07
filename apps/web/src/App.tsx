@@ -100,7 +100,7 @@ export function App() {
         setBoundary(s.gauntlet?.boundary ?? "");
         void loadTree(s.cwd);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Errore caricamento");
+        setError(err instanceof Error ? err.message : "Failed to load session");
       }
     },
     [loadTree],
@@ -117,7 +117,7 @@ export function App() {
   const handleCreate = async () => {
     const cwd = cwdInput.trim();
     if (!cwd) {
-      setError("Inserisci un path assoluto della cartella");
+      setError("Enter an absolute folder path");
       return;
     }
     if (mode === "gauntlet" && !qualityBar.trim()) {
@@ -142,7 +142,7 @@ export function App() {
       await refreshSessions();
       await selectSession(created.id);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Creazione fallita");
+      setError(err instanceof Error ? err.message : "Failed to create session");
     } finally {
       setCreating(false);
     }
@@ -299,7 +299,7 @@ export function App() {
       void refreshSessions();
     } catch (err) {
       if ((err as Error).name !== "AbortError") {
-        setError(err instanceof Error ? err.message : "Invio fallito");
+        setError(err instanceof Error ? err.message : "Failed to send message");
         setStatus("error");
       }
     } finally {
@@ -316,7 +316,7 @@ export function App() {
       setStatus("idle");
       setSending(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Cancel fallito");
+      setError(err instanceof Error ? err.message : "Failed to cancel");
     }
   };
 
@@ -330,19 +330,19 @@ export function App() {
       <aside className="sidebar">
         <div className="brand">
           <h1>Open Cowork</h1>
-          <p>Workspace agentico locale</p>
+          <p>Local agentic workspace</p>
         </div>
 
         <div className="new-session">
-          <label htmlFor="cwd">Cartella (path assoluto)</label>
+          <label htmlFor="cwd">Folder (absolute path)</label>
           <input
             id="cwd"
             value={cwdInput}
             onChange={(e) => setCwdInput(e.target.value)}
-            placeholder="/Users/…/progetto"
+            placeholder="/Users/…/project"
             spellCheck={false}
           />
-          <label htmlFor="model">Modello</label>
+          <label htmlFor="model">Model</label>
           <input
             id="model"
             value={modelInput}
@@ -404,7 +404,7 @@ export function App() {
             disabled={creating}
             onClick={() => void handleCreate()}
           >
-            {creating ? "Creazione…" : "Nuova sessione"}
+            {creating ? "Creating…" : "New session"}
           </button>
         </div>
 
@@ -434,12 +434,12 @@ export function App() {
             <h2>
               {mode === "gauntlet"
                 ? "Set a goal and a concrete quality bar"
-                : "Scegli una cartella e descrivi l'obiettivo"}
+                : "Pick a folder and describe the goal"}
             </h2>
             <p>
               {mode === "gauntlet"
                 ? "Gauntlet mode wraps your goal in a builder/critic orchestration loop. Pick an absolute folder path, define an inspectable bar, then start."
-                : "Crea una sessione a sinistra con il path assoluto del workspace, poi scrivi cosa deve fare l'agent. Vedrai lo stream live e i file aggiornati a destra."}
+                : "Create a session on the left with an absolute workspace path, then describe what the agent should do. Live stream and file updates appear on the right."}
             </p>
             {mode === "gauntlet" && (
               <div className="example-card">
@@ -550,7 +550,7 @@ export function App() {
                   placeholder={
                     mode === "gauntlet"
                       ? GAUNTLET_EXAMPLE.goal
-                      : "Descrivi l'obiettivo…"
+                      : "Describe the goal…"
                   }
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
@@ -576,7 +576,7 @@ export function App() {
                       disabled={!canSend}
                       onClick={() => void handleSend()}
                     >
-                      {mode === "gauntlet" ? "Start Gauntlet" : "Avvia"}
+                      {mode === "gauntlet" ? "Start Gauntlet" : "Start"}
                     </button>
                   )}
                 </div>
@@ -591,7 +591,7 @@ export function App() {
           <div className="panel-title">File</div>
           <div className="tree">
             {tree.length === 0 ? (
-              <div className="tree-node">Nessun albero</div>
+              <div className="tree-node">No files</div>
             ) : (
               tree.map((n) => (
                 <div
@@ -618,7 +618,7 @@ export function App() {
           <div className="panel-title">Activity</div>
           <div className="activity">
             {activity.length === 0 ? (
-              <div className="activity-item">In attesa di eventi…</div>
+              <div className="activity-item">Waiting for events…</div>
             ) : (
               activity.map((a) => (
                 <div
