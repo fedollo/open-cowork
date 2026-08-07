@@ -182,7 +182,19 @@ sessionsRoutes.post("/:id/messages", async (c) => {
           });
         }
 
-        const agent = await getOrResumeAgent(id, session.agentId);
+        const { agent, agentId, recreated } = await getOrResumeAgent(id, {
+          agentId: session.agentId,
+          cwd: session.cwd,
+          model: session.model,
+        });
+        if (recreated) {
+          session.agentId = agentId;
+          send({
+            type: "status",
+            status: "running",
+            message: "Previous agent lost after restart — created a new one",
+          });
+        }
 
         session.mode = mode;
         if (mode === "gauntlet" && gauntletCfg) {

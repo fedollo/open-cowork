@@ -14,6 +14,11 @@ const registry = new Map<string, RegistryEntry>();
 /** Load project + user Cursor layers (skills, rules, AGENTS.md). */
 const LOCAL_SETTING_SOURCES = ["project", "user"] as const;
 
+function isAgentNotFound(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return /not found/i.test(msg) || /unknown agent/i.test(msg);
+}
+
 export async function createAgent(opts: {
   cwd: string;
   model: string;
@@ -31,22 +36,42 @@ export async function createAgent(opts: {
   return { agent, agentId };
 }
 
+/**
+ * Resume an existing agent, or recreate one if the local store lost it
+ * (common after API restart / dispose).
+ */
 export async function getOrResumeAgent(
   sessionId: string,
-  agentId: string,
-): Promise<AgentInstance> {
+  opts: { agentId: string; cwd: string; model: string },
+): Promise<{ agent: AgentInstance; agentId: string; recreated: boolean }> {
   const existing = registry.get(sessionId);
-  if (existing) return existing.agent;
+  if (existing) {
+    return { agent: existing.agent, agentId: existing.agent.agentId, recreated: false };
+  }
 
   const apiKey = requireApiKey();
-  const agent = await Agent.resume(agentId, {
-    apiKey,
-    local: {
-      settingSources: [...LOCAL_SETTING_SOURCES],
-    },
-  });
-  registry.set(sessionId, { agent, currentRun: null });
-  return agent;
+  try {
+    const agent = await Agent.resume(opts.agentId, {
+      apiKey,
+      local: {
+        settingSources: [...LOCAL_SETTING_SOURCES],
+      },
+    });
+    registry.set(sessionId, { agent, currentRun: null });
+    return { agent, agentId: agent.agentId, recreated: false };
+  } catch (err) {
+    if (!isAgentNotFound(err)) throw err;
+
+    console.warn(
+      `Agent ${opts.agentId} not found — recreating for session ${sessionId}`,
+    );
+    const { agent, agentId } = await createAgent({
+      cwd: opts.cwd,
+      model: opts.model,
+    });
+    registry.set(sessionId, { agent, currentRun: null });
+    return { agent, agentId, recreated: true };
+  }
 }
 
 export function registerAgent(sessionId: string, agent: AgentInstance): void {
