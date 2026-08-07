@@ -1,0 +1,105 @@
+import type {
+  AgentStreamEvent,
+  CreateSessionResponse,
+  FsTreeNode,
+  Session,
+  SessionStatus,
+} from "@open-cowork/shared";
+
+const BASE = "/api";
+
+export async function listSessions(): Promise<
+  Array<Omit<Session, "messages"> & { messageCount: number }>
+> {
+  const res = await fetch(`${BASE}/sessions`);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+export async function getSession(id: string): Promise<Session> {
+  const res = await fetch(`${BASE}/sessions/${id}`);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+export async function createSession(
+  cwd: string,
+  model?: string,
+): Promise<CreateSessionResponse> {
+  const res = await fetch(`${BASE}/sessions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ cwd, model }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error ?? res.statusText);
+  }
+  return res.json();
+}
+
+export async function cancelSession(id: string): Promise<boolean> {
+  const res = await fetch(`${BASE}/sessions/${id}/cancel`, { method: "POST" });
+  if (!res.ok) throw new Error(await res.text());
+  const data = await res.json();
+  return Boolean(data.cancelled);
+}
+
+export async function fetchTree(
+  cwd: string,
+  depth = 2,
+): Promise<{ cwd: string; nodes: FsTreeNode[] }> {
+  const res = await fetch(
+    `${BASE}/fs/tree?cwd=${encodeURIComponent(cwd)}&depth=${depth}`,
+  );
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+export async function streamMessage(
+  sessionId: string,
+  prompt: string,
+  onEvent: (event: AgentStreamEvent) => void,
+  signal?: AbortSignal,
+): Promise<SessionStatus | null> {
+  const res = await fetch(`${BASE}/sessions/${sessionId}/messages`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ prompt }),
+    signal,
+  });
+
+  if (!res.ok || !res.body) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error ?? res.statusText);
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let lastStatus: SessionStatus | null = null;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const parts = buffer.split("\n\n");
+    buffer = parts.pop() ?? "";
+
+    for (const part of parts) {
+      const line = part
+        .split("\n")
+        .find((l) => l.startsWith("data: "));
+      if (!line) continue;
+      try {
+        const event = JSON.parse(line.slice(6)) as AgentStreamEvent;
+        onEvent(event);
+        if (event.type === "status") lastStatus = event.status;
+      } catch {
+        // skip malformed
+      }
+    }
+  }
+
+  return lastStatus;
+}

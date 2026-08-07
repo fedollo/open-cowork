@@ -1,0 +1,14 @@
+node_modules
+dist
+.env
+.DS_Store
+*.log
+.open-cowork
+.cursor-cowork
+apps/web/dist
+apps/api/dist
+packages/shared/dist
+.turbo
+*.tsbuildinfo
+plans
+.cursor

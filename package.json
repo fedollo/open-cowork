@@ -1,0 +1,19 @@
+{
+  "name": "open-cowork",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Local agentic workspace UI powered by the Cursor Agent SDK (unofficial)",
+  "scripts": {
+    "predev": "pnpm --filter @open-cowork/shared build",
+    "dev": "pnpm -r --parallel --filter @open-cowork/api --filter @open-cowork/web dev",
+    "build": "pnpm -r --filter @open-cowork/shared --filter @open-cowork/api --filter @open-cowork/web build",
+    "dev:api": "pnpm --filter @open-cowork/api dev",
+    "dev:web": "pnpm --filter @open-cowork/web dev",
+    "restart": "bash scripts/restart.sh",
+    "stop": "bash scripts/stop.sh"
+  },
+  "engines": {
+    "node": ">=22.13"
+  },
+  "packageManager": "pnpm@9.15.0"
+}
