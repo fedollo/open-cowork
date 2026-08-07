@@ -23,7 +23,7 @@ export const env = {
 export function requireApiKey(): string {
   if (!env.apiKey) {
     throw new Error(
-      "CURSOR_API_KEY mancante. Copia .env.example in .env e inserisci la chiave.",
+      "CURSOR_API_KEY missing. Copy .env.example to .env and set your key.",
     );
   }
   return env.apiKey;

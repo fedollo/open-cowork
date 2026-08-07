@@ -435,6 +435,181 @@ button {
   color: var(--danger);
 }
 
+.field-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.mode-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.35rem;
+}
+
+.mode-btn {
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.mode-btn.active {
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg));
+}
+
+.sidebar-textarea {
+  width: 100%;
+  resize: vertical;
+  padding: 0.45rem 0.55rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.title-row .title {
+  flex: 1;
+  min-width: 0;
+}
+
+.mode-badge {
+  flex-shrink: 0;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.12rem 0.35rem;
+  border-radius: 3px;
+  border: 1px solid color-mix(in srgb, var(--warning) 45%, var(--border));
+  color: var(--warning);
+}
+
+.header-pills {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.status-pill.gauntlet {
+  color: var(--warning);
+  border-color: color-mix(in srgb, var(--warning) 40%, var(--border));
+}
+
+.gauntlet-hint {
+  padding: 0.45rem 1.25rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--warning) 6%, transparent);
+}
+
+.gauntlet-hint code {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--text);
+}
+
+.example-card {
+  margin-top: 1.25rem;
+  max-width: 36rem;
+  text-align: left;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-raised);
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.example-card p {
+  margin: 0 0 0.65rem;
+}
+
+.example-card strong {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.example-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--warning);
+  margin-bottom: 0.5rem !important;
+}
+
+.example-card .btn {
+  margin-top: 0.25rem;
+}
+
+.gauntlet-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.65rem;
+}
+
+.gauntlet-fields-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.75rem;
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.link-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.gauntlet-fields label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.gauntlet-fields textarea {
+  width: 100%;
+  resize: vertical;
+  padding: 0.5rem 0.65rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.gauntlet-fields textarea:focus {
+  outline: 1px solid color-mix(in srgb, var(--accent) 50%, transparent);
+  border-color: var(--accent);
+}
+
 @media (max-width: 960px) {
   .app {
     grid-template-columns: 1fr;

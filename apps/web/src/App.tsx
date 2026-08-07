@@ -4,6 +4,7 @@ import type {
   ChatMessage,
   FsTreeNode,
   Session,
+  SessionMode,
   SessionStatus,
 } from "@open-cowork/shared";
 import {
@@ -14,6 +15,7 @@ import {
   listSessions,
   streamMessage,
 } from "./api";
+import { GAUNTLET_EXAMPLE } from "./examples";
 
 interface SessionSummary {
   id: string;
@@ -24,6 +26,7 @@ interface SessionSummary {
   createdAt: string;
   updatedAt: string;
   status: SessionStatus;
+  mode?: SessionMode;
   messageCount: number;
 }
 
@@ -40,6 +43,9 @@ export function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [cwdInput, setCwdInput] = useState("");
   const [modelInput, setModelInput] = useState("composer-2.5");
+  const [mode, setMode] = useState<SessionMode>("normal");
+  const [qualityBar, setQualityBar] = useState("");
+  const [boundary, setBoundary] = useState("");
   const [prompt, setPrompt] = useState("");
   const [status, setStatus] = useState<SessionStatus>("idle");
   const [liveAssistant, setLiveAssistant] = useState("");
@@ -48,6 +54,7 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [sending, setSending] = useState(false);
+  const [gauntletPhase, setGauntletPhase] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -82,33 +89,60 @@ export function App() {
       setError(null);
       setLiveAssistant("");
       setActivity([]);
+      setGauntletPhase(null);
       setActiveId(id);
       try {
         const s = await getSession(id);
         setSession(s);
         setStatus(s.status);
+        setMode(s.mode ?? "normal");
+        setQualityBar(s.gauntlet?.qualityBar ?? "");
+        setBoundary(s.gauntlet?.boundary ?? "");
         void loadTree(s.cwd);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Errore caricamento");
+        setError(err instanceof Error ? err.message : "Failed to load session");
       }
     },
     [loadTree],
   );
 
+  const fillGauntletExample = () => {
+    setMode("gauntlet");
+    setQualityBar(GAUNTLET_EXAMPLE.qualityBar);
+    setBoundary(GAUNTLET_EXAMPLE.boundary);
+    setPrompt(GAUNTLET_EXAMPLE.goal);
+    setError(null);
+  };
+
   const handleCreate = async () => {
     const cwd = cwdInput.trim();
     if (!cwd) {
-      setError("Inserisci un path assoluto della cartella");
+      setError("Enter an absolute folder path");
+      return;
+    }
+    if (mode === "gauntlet" && !qualityBar.trim()) {
+      setError("Gauntlet mode requires a concrete quality bar");
       return;
     }
     setCreating(true);
     setError(null);
     try {
-      const created = await createSession(cwd, modelInput.trim() || undefined);
+      const created = await createSession({
+        cwd,
+        model: modelInput.trim() || undefined,
+        mode,
+        gauntlet:
+          mode === "gauntlet"
+            ? {
+                qualityBar: qualityBar.trim(),
+                boundary: boundary.trim() || undefined,
+              }
+            : undefined,
+      });
       await refreshSessions();
       await selectSession(created.id);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Creazione fallita");
+      setError(err instanceof Error ? err.message : "Failed to create session");
     } finally {
       setCreating(false);
     }
@@ -155,6 +189,17 @@ export function App() {
           },
         ]);
         break;
+      case "gauntlet_phase":
+        setGauntletPhase(event.phase);
+        setActivity((prev) => [
+          ...prev,
+          {
+            id: `${Date.now()}-${prev.length}`,
+            kind: `gauntlet:${event.phase}`,
+            text: event.detail ?? event.phase,
+          },
+        ]);
+        break;
       case "error":
         setError(event.message);
         setActivity((prev) => [
@@ -182,22 +227,47 @@ export function App() {
 
   const handleSend = async () => {
     if (!activeId || !prompt.trim() || sending) return;
+    if (mode === "gauntlet" && !qualityBar.trim()) {
+      setError("Gauntlet mode requires a concrete quality bar");
+      return;
+    }
+
     const text = prompt.trim();
     setPrompt("");
     setSending(true);
     setError(null);
     setLiveAssistant("");
     setStatus("running");
+    setGauntletPhase(mode === "gauntlet" ? "lead" : null);
+
+    const displayContent =
+      mode === "gauntlet"
+        ? `[Gauntlet]\nGoal: ${text}\nBar: ${qualityBar.trim()}${
+            boundary.trim() ? `\nBoundary: ${boundary.trim()}` : ""
+          }`
+        : text;
 
     const userMsg: ChatMessage = {
       id: `local-${Date.now()}`,
       role: "user",
-      content: text,
+      content: displayContent,
       createdAt: new Date().toISOString(),
     };
     setSession((prev) =>
       prev
-        ? { ...prev, messages: [...prev.messages, userMsg], status: "running" }
+        ? {
+            ...prev,
+            mode,
+            gauntlet:
+              mode === "gauntlet"
+                ? {
+                    qualityBar: qualityBar.trim(),
+                    boundary: boundary.trim() || undefined,
+                  }
+                : prev.gauntlet,
+            messages: [...prev.messages, userMsg],
+            status: "running",
+          }
         : prev,
     );
 
@@ -205,7 +275,22 @@ export function App() {
     abortRef.current = ac;
 
     try {
-      await streamMessage(activeId, text, handleEvent, ac.signal);
+      await streamMessage(
+        activeId,
+        {
+          prompt: text,
+          mode,
+          gauntlet:
+            mode === "gauntlet"
+              ? {
+                  qualityBar: qualityBar.trim(),
+                  boundary: boundary.trim() || undefined,
+                }
+              : undefined,
+        },
+        handleEvent,
+        ac.signal,
+      );
       const refreshed = await getSession(activeId);
       setSession(refreshed);
       setStatus(refreshed.status);
@@ -214,7 +299,7 @@ export function App() {
       void refreshSessions();
     } catch (err) {
       if ((err as Error).name !== "AbortError") {
-        setError(err instanceof Error ? err.message : "Invio fallito");
+        setError(err instanceof Error ? err.message : "Failed to send message");
         setStatus("error");
       }
     } finally {
@@ -231,43 +316,95 @@ export function App() {
       setStatus("idle");
       setSending(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Cancel fallito");
+      setError(err instanceof Error ? err.message : "Failed to cancel");
     }
   };
 
   const showEmpty = !session;
+  const canSend =
+    Boolean(prompt.trim()) &&
+    (mode !== "gauntlet" || Boolean(qualityBar.trim()));
 
   return (
     <div className="app">
       <aside className="sidebar">
         <div className="brand">
           <h1>Open Cowork</h1>
-          <p>Workspace agentico locale</p>
+          <p>Local agentic workspace</p>
         </div>
 
         <div className="new-session">
-          <label htmlFor="cwd">Cartella (path assoluto)</label>
+          <label htmlFor="cwd">Folder (absolute path)</label>
           <input
             id="cwd"
             value={cwdInput}
             onChange={(e) => setCwdInput(e.target.value)}
-            placeholder="/Users/…/progetto"
+            placeholder="/Users/…/project"
             spellCheck={false}
           />
-          <label htmlFor="model">Modello</label>
+          <label htmlFor="model">Model</label>
           <input
             id="model"
             value={modelInput}
             onChange={(e) => setModelInput(e.target.value)}
             spellCheck={false}
           />
+
+          <span className="field-label">Mode</span>
+          <div className="mode-toggle" role="group" aria-label="Session mode">
+            <button
+              type="button"
+              className={`mode-btn${mode === "normal" ? " active" : ""}`}
+              onClick={() => setMode("normal")}
+            >
+              Normal
+            </button>
+            <button
+              type="button"
+              className={`mode-btn${mode === "gauntlet" ? " active" : ""}`}
+              onClick={() => setMode("gauntlet")}
+            >
+              Gauntlet
+            </button>
+          </div>
+
+          {mode === "gauntlet" && (
+            <>
+              <label htmlFor="qualityBar">Quality bar</label>
+              <textarea
+                id="qualityBar"
+                className="sidebar-textarea"
+                value={qualityBar}
+                onChange={(e) => setQualityBar(e.target.value)}
+                placeholder={GAUNTLET_EXAMPLE.qualityBar.slice(0, 80) + "…"}
+                rows={3}
+              />
+              <label htmlFor="boundary">Boundary (optional)</label>
+              <textarea
+                id="boundary"
+                className="sidebar-textarea"
+                value={boundary}
+                onChange={(e) => setBoundary(e.target.value)}
+                placeholder={GAUNTLET_EXAMPLE.boundary.slice(0, 60) + "…"}
+                rows={2}
+              />
+              <button
+                className="btn btn-ghost"
+                type="button"
+                onClick={fillGauntletExample}
+              >
+                Use example
+              </button>
+            </>
+          )}
+
           <button
             className="btn"
             type="button"
             disabled={creating}
             onClick={() => void handleCreate()}
           >
-            {creating ? "Creazione…" : "Nuova sessione"}
+            {creating ? "Creating…" : "New session"}
           </button>
         </div>
 
@@ -279,7 +416,12 @@ export function App() {
               className={`session-item${activeId === s.id ? " active" : ""}`}
               onClick={() => void selectSession(s.id)}
             >
-              <span className="title">{s.title}</span>
+              <span className="title-row">
+                <span className="title">{s.title}</span>
+                {s.mode === "gauntlet" && (
+                  <span className="mode-badge">gauntlet</span>
+                )}
+              </span>
               <span className="meta">{s.cwd}</span>
             </button>
           ))}
@@ -289,13 +431,42 @@ export function App() {
       <main className="chat">
         {showEmpty ? (
           <div className="empty-state">
-            <h2>Scegli una cartella e descrivi l&apos;obiettivo</h2>
+            <h2>
+              {mode === "gauntlet"
+                ? "Set a goal and a concrete quality bar"
+                : "Pick a folder and describe the goal"}
+            </h2>
             <p>
-              Crea una sessione a sinistra con il path assoluto del workspace,
-              poi scrivi cosa deve fare l&apos;agent. Vedrai lo stream live e i
-              file aggiornati a destra.
+              {mode === "gauntlet"
+                ? "Gauntlet mode wraps your goal in a builder/critic orchestration loop. Pick an absolute folder path, define an inspectable bar, then start."
+                : "Create a session on the left with an absolute workspace path, then describe what the agent should do. Live stream and file updates appear on the right."}
             </p>
-            {error && <div className="error-banner" style={{ marginTop: "1rem" }}>{error}</div>}
+            {mode === "gauntlet" && (
+              <div className="example-card">
+                <p className="example-label">Example</p>
+                <p>
+                  <strong>Goal:</strong> {GAUNTLET_EXAMPLE.goal}
+                </p>
+                <p>
+                  <strong>Bar:</strong> {GAUNTLET_EXAMPLE.qualityBar}
+                </p>
+                <p>
+                  <strong>Boundary:</strong> {GAUNTLET_EXAMPLE.boundary}
+                </p>
+                <button
+                  className="btn"
+                  type="button"
+                  onClick={fillGauntletExample}
+                >
+                  Use this example
+                </button>
+              </div>
+            )}
+            {error && (
+              <div className="error-banner" style={{ marginTop: "1rem" }}>
+                {error}
+              </div>
+            )}
           </div>
         ) : (
           <>
@@ -303,8 +474,22 @@ export function App() {
               <span className="cwd" title={session.cwd}>
                 {session.cwd}
               </span>
-              <span className={`status-pill ${status}`}>{status}</span>
+              <div className="header-pills">
+                {(session.mode ?? mode) === "gauntlet" && (
+                  <span className="status-pill gauntlet">
+                    gauntlet{gauntletPhase ? ` · ${gauntletPhase}` : ""}
+                  </span>
+                )}
+                <span className={`status-pill ${status}`}>{status}</span>
+              </div>
             </div>
+
+            {(session.mode ?? mode) === "gauntlet" && (
+              <div className="gauntlet-hint">
+                Progress file:{" "}
+                <code>.open-cowork/gauntlet-progress.md</code> in the workspace
+              </div>
+            )}
 
             <div className="messages">
               {session.messages.map((m) => (
@@ -324,11 +509,49 @@ export function App() {
 
             <div className="composer">
               {error && <div className="error-banner">{error}</div>}
+
+              {mode === "gauntlet" && (
+                <div className="gauntlet-fields">
+                  <div className="gauntlet-fields-header">
+                    <label htmlFor="composer-bar">Quality bar</label>
+                    <button
+                      type="button"
+                      className="link-btn"
+                      onClick={fillGauntletExample}
+                      disabled={sending}
+                    >
+                      Use example
+                    </button>
+                  </div>
+                  <textarea
+                    id="composer-bar"
+                    value={qualityBar}
+                    onChange={(e) => setQualityBar(e.target.value)}
+                    placeholder="Concrete inspectable standard (e.g. match Vite README clarity)…"
+                    rows={2}
+                    disabled={sending}
+                  />
+                  <label htmlFor="composer-boundary">Boundary (optional)</label>
+                  <textarea
+                    id="composer-boundary"
+                    value={boundary}
+                    onChange={(e) => setBoundary(e.target.value)}
+                    placeholder="Hard limits (e.g. only edit README/docs)…"
+                    rows={1}
+                    disabled={sending}
+                  />
+                </div>
+              )}
+
               <div className="composer-row">
                 <textarea
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="Descrivi l'obiettivo…"
+                  placeholder={
+                    mode === "gauntlet"
+                      ? GAUNTLET_EXAMPLE.goal
+                      : "Describe the goal…"
+                  }
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
                       e.preventDefault();
@@ -350,10 +573,10 @@ export function App() {
                     <button
                       className="btn"
                       type="button"
-                      disabled={!prompt.trim()}
+                      disabled={!canSend}
                       onClick={() => void handleSend()}
                     >
-                      Avvia
+                      {mode === "gauntlet" ? "Start Gauntlet" : "Start"}
                     </button>
                   )}
                 </div>
@@ -368,7 +591,7 @@ export function App() {
           <div className="panel-title">File</div>
           <div className="tree">
             {tree.length === 0 ? (
-              <div className="tree-node">Nessun albero</div>
+              <div className="tree-node">No files</div>
             ) : (
               tree.map((n) => (
                 <div
@@ -395,7 +618,7 @@ export function App() {
           <div className="panel-title">Activity</div>
           <div className="activity">
             {activity.length === 0 ? (
-              <div className="activity-item">In attesa di eventi…</div>
+              <div className="activity-item">Waiting for events…</div>
             ) : (
               activity.map((a) => (
                 <div

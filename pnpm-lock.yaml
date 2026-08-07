@@ -6,19 +6,23 @@ settings:
 
 importers:
 
-  .: {}
+  .:
+    devDependencies:
+      tsx:
+        specifier: ^4.19.2
+        version: 4.23.5
 
   apps/api:
     dependencies:
-      '@open-cowork/shared':
-        specifier: workspace:*
-        version: link:../../packages/shared
       '@cursor/sdk':
         specifier: ^1.0.0
         version: 1.0.26
       '@hono/node-server':
         specifier: ^1.13.8
         version: 1.19.17(hono@4.12.34)
+      '@open-cowork/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       dotenv:
         specifier: ^16.4.7
         version: 16.6.1

@@ -10,7 +10,13 @@
     "dev:api": "pnpm --filter @open-cowork/api dev",
     "dev:web": "pnpm --filter @open-cowork/web dev",
     "restart": "bash scripts/restart.sh",
-    "stop": "bash scripts/stop.sh"
+    "stop": "bash scripts/stop.sh",
+    "test": "pnpm --filter @open-cowork/api test && tsx --test tests/**/*.test.ts",
+    "test:api": "pnpm --filter @open-cowork/api test",
+    "test:app": "tsx --test tests/**/*.test.ts"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2"
   },
   "engines": {
     "node": ">=22.13"
