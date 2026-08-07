@@ -524,11 +524,67 @@ button {
   color: var(--text);
 }
 
+.example-card {
+  margin-top: 1.25rem;
+  max-width: 36rem;
+  text-align: left;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-raised);
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.example-card p {
+  margin: 0 0 0.65rem;
+}
+
+.example-card strong {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.example-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--warning);
+  margin-bottom: 0.5rem !important;
+}
+
+.example-card .btn {
+  margin-top: 0.25rem;
+}
+
 .gauntlet-fields {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
   margin-bottom: 0.65rem;
+}
+
+.gauntlet-fields-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.75rem;
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.link-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .gauntlet-fields label {

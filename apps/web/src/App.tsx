@@ -15,6 +15,7 @@ import {
   listSessions,
   streamMessage,
 } from "./api";
+import { GAUNTLET_EXAMPLE } from "./examples";
 
 interface SessionSummary {
   id: string;
@@ -104,6 +105,14 @@ export function App() {
     },
     [loadTree],
   );
+
+  const fillGauntletExample = () => {
+    setMode("gauntlet");
+    setQualityBar(GAUNTLET_EXAMPLE.qualityBar);
+    setBoundary(GAUNTLET_EXAMPLE.boundary);
+    setPrompt(GAUNTLET_EXAMPLE.goal);
+    setError(null);
+  };
 
   const handleCreate = async () => {
     const cwd = cwdInput.trim();
@@ -367,7 +376,7 @@ export function App() {
                 className="sidebar-textarea"
                 value={qualityBar}
                 onChange={(e) => setQualityBar(e.target.value)}
-                placeholder="Concrete inspectable standard (not “make it amazing”)"
+                placeholder={GAUNTLET_EXAMPLE.qualityBar.slice(0, 80) + "…"}
                 rows={3}
               />
               <label htmlFor="boundary">Boundary (optional)</label>
@@ -376,9 +385,16 @@ export function App() {
                 className="sidebar-textarea"
                 value={boundary}
                 onChange={(e) => setBoundary(e.target.value)}
-                placeholder="Hard limits / stop conditions"
+                placeholder={GAUNTLET_EXAMPLE.boundary.slice(0, 60) + "…"}
                 rows={2}
               />
+              <button
+                className="btn btn-ghost"
+                type="button"
+                onClick={fillGauntletExample}
+              >
+                Use example
+              </button>
             </>
           )}
 
@@ -425,6 +441,27 @@ export function App() {
                 ? "Gauntlet mode wraps your goal in a builder/critic orchestration loop. Pick an absolute folder path, define an inspectable bar, then start."
                 : "Crea una sessione a sinistra con il path assoluto del workspace, poi scrivi cosa deve fare l'agent. Vedrai lo stream live e i file aggiornati a destra."}
             </p>
+            {mode === "gauntlet" && (
+              <div className="example-card">
+                <p className="example-label">Example</p>
+                <p>
+                  <strong>Goal:</strong> {GAUNTLET_EXAMPLE.goal}
+                </p>
+                <p>
+                  <strong>Bar:</strong> {GAUNTLET_EXAMPLE.qualityBar}
+                </p>
+                <p>
+                  <strong>Boundary:</strong> {GAUNTLET_EXAMPLE.boundary}
+                </p>
+                <button
+                  className="btn"
+                  type="button"
+                  onClick={fillGauntletExample}
+                >
+                  Use this example
+                </button>
+              </div>
+            )}
             {error && (
               <div className="error-banner" style={{ marginTop: "1rem" }}>
                 {error}
@@ -475,12 +512,22 @@ export function App() {
 
               {mode === "gauntlet" && (
                 <div className="gauntlet-fields">
-                  <label htmlFor="composer-bar">Quality bar</label>
+                  <div className="gauntlet-fields-header">
+                    <label htmlFor="composer-bar">Quality bar</label>
+                    <button
+                      type="button"
+                      className="link-btn"
+                      onClick={fillGauntletExample}
+                      disabled={sending}
+                    >
+                      Use example
+                    </button>
+                  </div>
                   <textarea
                     id="composer-bar"
                     value={qualityBar}
                     onChange={(e) => setQualityBar(e.target.value)}
-                    placeholder="Concrete inspectable standard…"
+                    placeholder="Concrete inspectable standard (e.g. match Vite README clarity)…"
                     rows={2}
                     disabled={sending}
                   />
@@ -489,7 +536,7 @@ export function App() {
                     id="composer-boundary"
                     value={boundary}
                     onChange={(e) => setBoundary(e.target.value)}
-                    placeholder="Hard limits…"
+                    placeholder="Hard limits (e.g. only edit README/docs)…"
                     rows={1}
                     disabled={sending}
                   />
@@ -502,7 +549,7 @@ export function App() {
                   onChange={(e) => setPrompt(e.target.value)}
                   placeholder={
                     mode === "gauntlet"
-                      ? "Describe the ambitious goal…"
+                      ? GAUNTLET_EXAMPLE.goal
                       : "Descrivi l'obiettivo…"
                   }
                   onKeyDown={(e) => {
