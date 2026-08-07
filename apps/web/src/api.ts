@@ -2,7 +2,9 @@ import type {
   AgentStreamEvent,
   CreateSessionResponse,
   FsTreeNode,
+  GauntletConfig,
   Session,
+  SessionMode,
   SessionStatus,
 } from "@open-cowork/shared";
 
@@ -22,14 +24,16 @@ export async function getSession(id: string): Promise<Session> {
   return res.json();
 }
 
-export async function createSession(
-  cwd: string,
-  model?: string,
-): Promise<CreateSessionResponse> {
+export async function createSession(opts: {
+  cwd: string;
+  model?: string;
+  mode?: SessionMode;
+  gauntlet?: GauntletConfig;
+}): Promise<CreateSessionResponse> {
   const res = await fetch(`${BASE}/sessions`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ cwd, model }),
+    body: JSON.stringify(opts),
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
@@ -58,14 +62,18 @@ export async function fetchTree(
 
 export async function streamMessage(
   sessionId: string,
-  prompt: string,
+  opts: {
+    prompt: string;
+    mode?: SessionMode;
+    gauntlet?: GauntletConfig;
+  },
   onEvent: (event: AgentStreamEvent) => void,
   signal?: AbortSignal,
 ): Promise<SessionStatus | null> {
   const res = await fetch(`${BASE}/sessions/${sessionId}/messages`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt }),
+    body: JSON.stringify(opts),
     signal,
   });
 

@@ -4,6 +4,7 @@ import type {
   ChatMessage,
   FsTreeNode,
   Session,
+  SessionMode,
   SessionStatus,
 } from "@open-cowork/shared";
 import {
@@ -24,6 +25,7 @@ interface SessionSummary {
   createdAt: string;
   updatedAt: string;
   status: SessionStatus;
+  mode?: SessionMode;
   messageCount: number;
 }
 
@@ -40,6 +42,9 @@ export function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [cwdInput, setCwdInput] = useState("");
   const [modelInput, setModelInput] = useState("composer-2.5");
+  const [mode, setMode] = useState<SessionMode>("normal");
+  const [qualityBar, setQualityBar] = useState("");
+  const [boundary, setBoundary] = useState("");
   const [prompt, setPrompt] = useState("");
   const [status, setStatus] = useState<SessionStatus>("idle");
   const [liveAssistant, setLiveAssistant] = useState("");
@@ -48,6 +53,7 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [sending, setSending] = useState(false);
+  const [gauntletPhase, setGauntletPhase] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -82,11 +88,15 @@ export function App() {
       setError(null);
       setLiveAssistant("");
       setActivity([]);
+      setGauntletPhase(null);
       setActiveId(id);
       try {
         const s = await getSession(id);
         setSession(s);
         setStatus(s.status);
+        setMode(s.mode ?? "normal");
+        setQualityBar(s.gauntlet?.qualityBar ?? "");
+        setBoundary(s.gauntlet?.boundary ?? "");
         void loadTree(s.cwd);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Errore caricamento");
@@ -101,10 +111,25 @@ export function App() {
       setError("Inserisci un path assoluto della cartella");
       return;
     }
+    if (mode === "gauntlet" && !qualityBar.trim()) {
+      setError("Gauntlet mode requires a concrete quality bar");
+      return;
+    }
     setCreating(true);
     setError(null);
     try {
-      const created = await createSession(cwd, modelInput.trim() || undefined);
+      const created = await createSession({
+        cwd,
+        model: modelInput.trim() || undefined,
+        mode,
+        gauntlet:
+          mode === "gauntlet"
+            ? {
+                qualityBar: qualityBar.trim(),
+                boundary: boundary.trim() || undefined,
+              }
+            : undefined,
+      });
       await refreshSessions();
       await selectSession(created.id);
     } catch (err) {
@@ -155,6 +180,17 @@ export function App() {
           },
         ]);
         break;
+      case "gauntlet_phase":
+        setGauntletPhase(event.phase);
+        setActivity((prev) => [
+          ...prev,
+          {
+            id: `${Date.now()}-${prev.length}`,
+            kind: `gauntlet:${event.phase}`,
+            text: event.detail ?? event.phase,
+          },
+        ]);
+        break;
       case "error":
         setError(event.message);
         setActivity((prev) => [
@@ -182,22 +218,47 @@ export function App() {
 
   const handleSend = async () => {
     if (!activeId || !prompt.trim() || sending) return;
+    if (mode === "gauntlet" && !qualityBar.trim()) {
+      setError("Gauntlet mode requires a concrete quality bar");
+      return;
+    }
+
     const text = prompt.trim();
     setPrompt("");
     setSending(true);
     setError(null);
     setLiveAssistant("");
     setStatus("running");
+    setGauntletPhase(mode === "gauntlet" ? "lead" : null);
+
+    const displayContent =
+      mode === "gauntlet"
+        ? `[Gauntlet]\nGoal: ${text}\nBar: ${qualityBar.trim()}${
+            boundary.trim() ? `\nBoundary: ${boundary.trim()}` : ""
+          }`
+        : text;
 
     const userMsg: ChatMessage = {
       id: `local-${Date.now()}`,
       role: "user",
-      content: text,
+      content: displayContent,
       createdAt: new Date().toISOString(),
     };
     setSession((prev) =>
       prev
-        ? { ...prev, messages: [...prev.messages, userMsg], status: "running" }
+        ? {
+            ...prev,
+            mode,
+            gauntlet:
+              mode === "gauntlet"
+                ? {
+                    qualityBar: qualityBar.trim(),
+                    boundary: boundary.trim() || undefined,
+                  }
+                : prev.gauntlet,
+            messages: [...prev.messages, userMsg],
+            status: "running",
+          }
         : prev,
     );
 
@@ -205,7 +266,22 @@ export function App() {
     abortRef.current = ac;
 
     try {
-      await streamMessage(activeId, text, handleEvent, ac.signal);
+      await streamMessage(
+        activeId,
+        {
+          prompt: text,
+          mode,
+          gauntlet:
+            mode === "gauntlet"
+              ? {
+                  qualityBar: qualityBar.trim(),
+                  boundary: boundary.trim() || undefined,
+                }
+              : undefined,
+        },
+        handleEvent,
+        ac.signal,
+      );
       const refreshed = await getSession(activeId);
       setSession(refreshed);
       setStatus(refreshed.status);
@@ -236,6 +312,9 @@ export function App() {
   };
 
   const showEmpty = !session;
+  const canSend =
+    Boolean(prompt.trim()) &&
+    (mode !== "gauntlet" || Boolean(qualityBar.trim()));
 
   return (
     <div className="app">
@@ -261,6 +340,48 @@ export function App() {
             onChange={(e) => setModelInput(e.target.value)}
             spellCheck={false}
           />
+
+          <span className="field-label">Mode</span>
+          <div className="mode-toggle" role="group" aria-label="Session mode">
+            <button
+              type="button"
+              className={`mode-btn${mode === "normal" ? " active" : ""}`}
+              onClick={() => setMode("normal")}
+            >
+              Normal
+            </button>
+            <button
+              type="button"
+              className={`mode-btn${mode === "gauntlet" ? " active" : ""}`}
+              onClick={() => setMode("gauntlet")}
+            >
+              Gauntlet
+            </button>
+          </div>
+
+          {mode === "gauntlet" && (
+            <>
+              <label htmlFor="qualityBar">Quality bar</label>
+              <textarea
+                id="qualityBar"
+                className="sidebar-textarea"
+                value={qualityBar}
+                onChange={(e) => setQualityBar(e.target.value)}
+                placeholder="Concrete inspectable standard (not “make it amazing”)"
+                rows={3}
+              />
+              <label htmlFor="boundary">Boundary (optional)</label>
+              <textarea
+                id="boundary"
+                className="sidebar-textarea"
+                value={boundary}
+                onChange={(e) => setBoundary(e.target.value)}
+                placeholder="Hard limits / stop conditions"
+                rows={2}
+              />
+            </>
+          )}
+
           <button
             className="btn"
             type="button"
@@ -279,7 +400,12 @@ export function App() {
               className={`session-item${activeId === s.id ? " active" : ""}`}
               onClick={() => void selectSession(s.id)}
             >
-              <span className="title">{s.title}</span>
+              <span className="title-row">
+                <span className="title">{s.title}</span>
+                {s.mode === "gauntlet" && (
+                  <span className="mode-badge">gauntlet</span>
+                )}
+              </span>
               <span className="meta">{s.cwd}</span>
             </button>
           ))}
@@ -289,13 +415,21 @@ export function App() {
       <main className="chat">
         {showEmpty ? (
           <div className="empty-state">
-            <h2>Scegli una cartella e descrivi l&apos;obiettivo</h2>
+            <h2>
+              {mode === "gauntlet"
+                ? "Set a goal and a concrete quality bar"
+                : "Scegli una cartella e descrivi l'obiettivo"}
+            </h2>
             <p>
-              Crea una sessione a sinistra con il path assoluto del workspace,
-              poi scrivi cosa deve fare l&apos;agent. Vedrai lo stream live e i
-              file aggiornati a destra.
+              {mode === "gauntlet"
+                ? "Gauntlet mode wraps your goal in a builder/critic orchestration loop. Pick an absolute folder path, define an inspectable bar, then start."
+                : "Crea una sessione a sinistra con il path assoluto del workspace, poi scrivi cosa deve fare l'agent. Vedrai lo stream live e i file aggiornati a destra."}
             </p>
-            {error && <div className="error-banner" style={{ marginTop: "1rem" }}>{error}</div>}
+            {error && (
+              <div className="error-banner" style={{ marginTop: "1rem" }}>
+                {error}
+              </div>
+            )}
           </div>
         ) : (
           <>
@@ -303,8 +437,22 @@ export function App() {
               <span className="cwd" title={session.cwd}>
                 {session.cwd}
               </span>
-              <span className={`status-pill ${status}`}>{status}</span>
+              <div className="header-pills">
+                {(session.mode ?? mode) === "gauntlet" && (
+                  <span className="status-pill gauntlet">
+                    gauntlet{gauntletPhase ? ` · ${gauntletPhase}` : ""}
+                  </span>
+                )}
+                <span className={`status-pill ${status}`}>{status}</span>
+              </div>
             </div>
+
+            {(session.mode ?? mode) === "gauntlet" && (
+              <div className="gauntlet-hint">
+                Progress file:{" "}
+                <code>.open-cowork/gauntlet-progress.md</code> in the workspace
+              </div>
+            )}
 
             <div className="messages">
               {session.messages.map((m) => (
@@ -324,11 +472,39 @@ export function App() {
 
             <div className="composer">
               {error && <div className="error-banner">{error}</div>}
+
+              {mode === "gauntlet" && (
+                <div className="gauntlet-fields">
+                  <label htmlFor="composer-bar">Quality bar</label>
+                  <textarea
+                    id="composer-bar"
+                    value={qualityBar}
+                    onChange={(e) => setQualityBar(e.target.value)}
+                    placeholder="Concrete inspectable standard…"
+                    rows={2}
+                    disabled={sending}
+                  />
+                  <label htmlFor="composer-boundary">Boundary (optional)</label>
+                  <textarea
+                    id="composer-boundary"
+                    value={boundary}
+                    onChange={(e) => setBoundary(e.target.value)}
+                    placeholder="Hard limits…"
+                    rows={1}
+                    disabled={sending}
+                  />
+                </div>
+              )}
+
               <div className="composer-row">
                 <textarea
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="Descrivi l'obiettivo…"
+                  placeholder={
+                    mode === "gauntlet"
+                      ? "Describe the ambitious goal…"
+                      : "Descrivi l'obiettivo…"
+                  }
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
                       e.preventDefault();
@@ -350,10 +526,10 @@ export function App() {
                     <button
                       className="btn"
                       type="button"
-                      disabled={!prompt.trim()}
+                      disabled={!canSend}
                       onClick={() => void handleSend()}
                     >
-                      Avvia
+                      {mode === "gauntlet" ? "Start Gauntlet" : "Avvia"}
                     </button>
                   )}
                 </div>

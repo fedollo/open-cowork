@@ -34,17 +34,30 @@ pnpm stop      # kill only
 ## Usage
 
 1. Sidebar: **absolute** folder path + model (default `composer-2.5`)
-2. **New session**
-3. Write your goal → **Start** (⌘/Ctrl+Enter)
-4. Follow up in the same session; after reload it resumes via `Agent.resume`
-5. With `settingSources: project + user`, workspace and user skills/rules are loaded
+2. Choose **Normal** or **Gauntlet** mode
+3. **New session**
+4. Write your goal → **Start** / **Start Gauntlet** (⌘/Ctrl+Enter)
+5. Follow up in the same session; after reload it resumes via `Agent.resume`
+6. With `settingSources: project + user`, workspace and user skills/rules are loaded
+
+## Gauntlet mode
+
+Gauntlet mode wraps your goal in a **builder vs harsh critic** orchestration prompt (the [Gauntlet Loop](https://somethingbig.ai/gauntlet-loop) pattern popularized by Matt Shumer). The lead Cursor agent is instructed to:
+
+- decompose work into independently judgeable pieces
+- fan out builder subagents and **separate** critics with fresh context
+- compare real artifacts against a **concrete quality bar** (not “make it amazing”)
+- keep looping until the bar is met (or you hit **Stop**)
+- maintain `.open-cowork/gauntlet-progress.md` in the workspace
+
+You must provide a quality bar (and optionally hard boundaries). Open Cowork does not run a separate multi-agent orchestrator in the API yet — it relies on Cursor’s Task/subagent harness.
 
 ## Architecture
 
 | Package | Role |
 |---------|------|
 | `apps/web` | Vite + React — 3-column UI |
-| `apps/api` | Hono + `@cursor/sdk` — sessions, SSE, file tree |
+| `apps/api` | Hono + `@cursor/sdk` — sessions, SSE, file tree, Gauntlet prompt |
 | `packages/shared` | Shared types (`Session`, `AgentStreamEvent`, …) |
 
 Sessions are stored in `.open-cowork/sessions/*.json` (gitignored).
@@ -54,7 +67,8 @@ Sessions are stored in `.open-cowork/sessions/*.json` (gitignored).
 - Folder path is absolute text input (no Electron)
 - **Local** agents only
 - No user auth / multi-tenant / SaaS
-- One agent per session
+- One lead agent per session (subagents via Cursor Task)
+- Gauntlet critics are not fully isolated API processes (phase 2)
 
 ## License
 
