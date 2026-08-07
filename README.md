@@ -1,22 +1,22 @@
 # Open Cowork
 
-Mini-app web **locale** per workspace agentici: scegli una cartella, descrivi un obiettivo, un agent lavora sui file. Chat, albero file e activity live in un’unica UI.
+A **local** web mini-app for agentic workspaces: pick a folder, describe a goal, and let an agent work on your files. Chat, file tree, and live activity in one UI.
 
-Usa il runtime agent di [Cursor](https://cursor.com) tramite il pacchetto npm `@cursor/sdk` (dipendenza di terze parti).
+It uses Cursor’s agent runtime via the npm package `@cursor/sdk` (third-party dependency).
 
-> **Non affiliato a Cursor / Anysphere.** Progetto indipendente e non ufficiale. “Cursor” è un marchio dei rispettivi proprietari. L’uso dell’SDK e delle API è soggetto ai [Terms of Service](https://cursor.com/terms-of-service) di Cursor. Ogni utente porta la **propria** `CURSOR_API_KEY`.
+> **Not affiliated with Cursor / Anysphere.** Independent, unofficial project. “Cursor” is a trademark of its respective owners. Use of the SDK and APIs is subject to Cursor’s [Terms of Service](https://cursor.com/terms-of-service). Each user provides their **own** `CURSOR_API_KEY`.
 
-## Requisiti
+## Requirements
 
 - Node.js ≥ 22.13
 - [pnpm](https://pnpm.io) 9+
-- Una [API key Cursor](https://cursor.com/dashboard/integrations)
+- A [Cursor API key](https://cursor.com/dashboard/integrations)
 
 ## Setup
 
 ```bash
 cp .env.example .env
-# modifica .env → CURSOR_API_KEY=...
+# edit .env → CURSOR_API_KEY=...
 
 pnpm install
 pnpm --filter @open-cowork/shared build
@@ -27,36 +27,36 @@ pnpm dev
 - API: http://localhost:8787  
 
 ```bash
-pnpm restart   # kill porte 8787/5173 e riavvia
-pnpm stop      # solo kill
+pnpm restart   # kill ports 8787/5173 and restart
+pnpm stop      # kill only
 ```
 
-## Uso
+## Usage
 
-1. Sidebar: path **assoluto** della cartella + model (default `composer-2.5`)
-2. **Nuova sessione**
-3. Scrivi l’obiettivo → **Avvia** (⌘/Ctrl+Enter)
-4. Follow-up nella stessa sessione; dopo reload riprende via `Agent.resume`
-5. Con `settingSources: project + user` vengono caricate skills/rules del workspace e dell’utente
+1. Sidebar: **absolute** folder path + model (default `composer-2.5`)
+2. **New session**
+3. Write your goal → **Start** (⌘/Ctrl+Enter)
+4. Follow up in the same session; after reload it resumes via `Agent.resume`
+5. With `settingSources: project + user`, workspace and user skills/rules are loaded
 
-## Architettura
+## Architecture
 
-| Package | Ruolo |
-|---------|--------|
-| `apps/web` | Vite + React — UI a 3 colonne |
-| `apps/api` | Hono + `@cursor/sdk` — sessioni, SSE, file tree |
-| `packages/shared` | Tipi (`Session`, `AgentStreamEvent`, …) |
+| Package | Role |
+|---------|------|
+| `apps/web` | Vite + React — 3-column UI |
+| `apps/api` | Hono + `@cursor/sdk` — sessions, SSE, file tree |
+| `packages/shared` | Shared types (`Session`, `AgentStreamEvent`, …) |
 
-Sessioni: `.open-cowork/sessions/*.json` (gitignored).
+Sessions are stored in `.open-cowork/sessions/*.json` (gitignored).
 
-## Limitazioni MVP
+## MVP limitations
 
-- Path cartella come testo assoluto (niente Electron)
-- Solo agent **local**
-- Nessuna auth utenti / multi-tenant / SaaS
-- Un agent per sessione
+- Folder path is absolute text input (no Electron)
+- **Local** agents only
+- No user auth / multi-tenant / SaaS
+- One agent per session
 
 ## License
 
-MIT — vedi [LICENSE](LICENSE).  
-`@cursor/sdk` resta proprietario di Anysphere; vedi la sua `LICENSE.md` e i ToS Cursor.
+MIT — see [LICENSE](LICENSE).  
+`@cursor/sdk` remains proprietary to Anysphere; see its `LICENSE.md` and Cursor’s ToS.
