@@ -56,14 +56,15 @@ Layout: **sidebar** (workspace + sessions) · **center** (chat) · **right** (**
 1. Under **Folder (absolute path)**, type an absolute folder path (e.g. `/Users/you/my-project`).
 2. Set **Model** if needed (default `composer-2.5`).
 3. Under **Mode**, pick **Normal** or **Gauntlet**. For Gauntlet, fill **Quality bar** — click **Use example** to pre-fill.
-4. Click **New session** → the **composer** appears at the bottom of the center column.
-5. Write your goal, then **Start** (Normal) or **Start Gauntlet** (or ⌘/Ctrl+Enter).
+4. Optionally enable **Integrations** (GitHub, Atlas Cloud, Replicate) — each needs its env key in `.env` (badge shows **ready** or **needs …**).
+5. Click **New session** → the **composer** appears at the bottom of the center column.
+6. Write your goal, then **Start** (Normal) or **Start Gauntlet** (or ⌘/Ctrl+Enter).
 
-> Before step 4 the center panel is an empty state — no goal input until you create a session.
+> Before step 5 the center panel is an empty state — no goal input until you create a session.
 
 ### During a session
 
-Follow-up messages in the composer · **Stop** cancels an active stream · Gauntlet: edit **Quality bar** / **Boundary (optional)** before each send.
+Follow-up messages in the composer · **Stop** cancels an active stream · Gauntlet: edit **Quality bar** / **Boundary (optional)** before each send · toggle **Integrations** before create or on later sends (MCP config is re-applied each turn).
 
 ### Resume
 
@@ -74,6 +75,22 @@ Session files: `.open-cowork/sessions/` (gitignored). Gauntlet may write `.open-
 ## Gauntlet mode
 
 Builder vs harsh critic loop ([Gauntlet Loop](https://somethingbig.ai/gauntlet-loop)). Requires a **concrete quality bar**. The lead agent decomposes work, fans out builder/critic subagents, and loops until the bar is met. See [Usage](#usage) for UI steps.
+
+## Integrations
+
+Optional MCP servers attached to a session. Enable toggles in the sidebar; keys live only in root `.env` (see `.env.example`).
+
+| Integration | Env key(s) | Transport |
+|-------------|------------|-----------|
+| **GitHub** | `GITHUB_TOKEN` or `GITHUB_PERSONAL_ACCESS_TOKEN` | HTTP → `https://api.githubcopilot.com/mcp/` |
+| **Atlas Cloud** | `ATLASCLOUD_API_KEY` | stdio `npx -y atlascloud-mcp` |
+| **Replicate** | `REPLICATE_API_TOKEN` | stdio `npx -y replicate-mcp` |
+
+**GitHub token:** create a Personal Access Token at [github.com/settings/tokens](https://github.com/settings/tokens). Classic PATs (`ghp_…`) get automatic MCP tool filtering by scope; fine-grained PATs work too (API enforces permissions). Start with the least privilege you need (often `repo` + `read:org` for classic).
+
+**Atlas Cloud:** only `ATLASCLOUD_API_KEY` is used by MCP. A chat `baseURL` like `https://api.atlascloud.ai/v1` is for OpenAI-compatible SDK clients, not for this toggle.
+
+Enabling an integration without its key returns **400** with a clear message. Restart the API after editing `.env`. Stdio integrations need `npx` available on the machine that runs `apps/api`.
 
 ## Architecture
 
@@ -100,6 +117,7 @@ pnpm test   # unit + i18n + API smoke (if localhost:8787 is up)
 - **UI up, API calls fail** → Wait for `Open Cowork API on http://localhost:8787` before opening the UI; `pnpm dev` must run both API and web.
 - **Empty file tree** → Path must be **absolute** and exist.
 - **Start Gauntlet greyed out** → Fill **Quality bar** and goal.
+- **Integration requires … in .env** → Add the key from the error / badge, restart API (`pnpm restart`), then retry.
 - **Session stuck `running` after crash** → `pnpm restart`, reload, select session, send again.
 
 ## License

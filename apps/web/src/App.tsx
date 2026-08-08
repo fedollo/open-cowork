@@ -3,6 +3,8 @@ import type {
   AgentStreamEvent,
   ChatMessage,
   FsTreeNode,
+  IntegrationId,
+  IntegrationInfo,
   Session,
   SessionMode,
   SessionStatus,
@@ -12,6 +14,7 @@ import {
   createSession,
   fetchTree,
   getSession,
+  listIntegrations,
   listSessions,
   streamMessage,
 } from "./api";
@@ -27,6 +30,7 @@ interface SessionSummary {
   updatedAt: string;
   status: SessionStatus;
   mode?: SessionMode;
+  integrations?: IntegrationId[];
   messageCount: number;
 }
 
@@ -55,6 +59,12 @@ export function App() {
   const [creating, setCreating] = useState(false);
   const [sending, setSending] = useState(false);
   const [gauntletPhase, setGauntletPhase] = useState<string | null>(null);
+  const [integrationCatalog, setIntegrationCatalog] = useState<
+    IntegrationInfo[]
+  >([]);
+  const [enabledIntegrations, setEnabledIntegrations] = useState<
+    IntegrationId[]
+  >([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -67,9 +77,25 @@ export function App() {
     }
   }, []);
 
+  const refreshIntegrations = useCallback(async () => {
+    try {
+      const list = await listIntegrations();
+      setIntegrationCatalog(list);
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
+
   useEffect(() => {
     void refreshSessions();
-  }, [refreshSessions]);
+    void refreshIntegrations();
+  }, [refreshSessions, refreshIntegrations]);
+
+  const toggleIntegration = (id: IntegrationId) => {
+    setEnabledIntegrations((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  };
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -98,6 +124,7 @@ export function App() {
         setMode(s.mode ?? "normal");
         setQualityBar(s.gauntlet?.qualityBar ?? "");
         setBoundary(s.gauntlet?.boundary ?? "");
+        setEnabledIntegrations(s.integrations ?? []);
         void loadTree(s.cwd);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load session");
@@ -138,6 +165,7 @@ export function App() {
                 boundary: boundary.trim() || undefined,
               }
             : undefined,
+        integrations: enabledIntegrations,
       });
       await refreshSessions();
       await selectSession(created.id);
@@ -265,6 +293,7 @@ export function App() {
                     boundary: boundary.trim() || undefined,
                   }
                 : prev.gauntlet,
+            integrations: enabledIntegrations,
             messages: [...prev.messages, userMsg],
             status: "running",
           }
@@ -287,6 +316,7 @@ export function App() {
                   boundary: boundary.trim() || undefined,
                 }
               : undefined,
+          integrations: enabledIntegrations,
         },
         handleEvent,
         ac.signal,
@@ -398,6 +428,45 @@ export function App() {
             </>
           )}
 
+          <span className="field-label">Integrations</span>
+          <div className="integrations-list" role="group" aria-label="Integrations">
+            {integrationCatalog.map((item) => {
+              const checked = enabledIntegrations.includes(item.id);
+              return (
+                <label
+                  key={item.id}
+                  className={`integration-row${checked ? " on" : ""}${
+                    !item.configured ? " missing" : ""
+                  }`}
+                  title={
+                    item.configured
+                      ? item.description
+                      : `${item.description} — set ${item.envKey} in .env`
+                  }
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggleIntegration(item.id)}
+                  />
+                  <span className="integration-meta">
+                    <span className="integration-label">{item.label}</span>
+                    <span
+                      className={`integration-badge${
+                        item.configured ? " ready" : " warn"
+                      }`}
+                    >
+                      {item.configured ? "ready" : `needs ${item.envKey}`}
+                    </span>
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+          {integrationCatalog.length === 0 && (
+            <p className="hint-muted">Loading integrations…</p>
+          )}
+
           <button
             className="btn"
             type="button"
@@ -480,6 +549,11 @@ export function App() {
                     gauntlet{gauntletPhase ? ` · ${gauntletPhase}` : ""}
                   </span>
                 )}
+                {(session.integrations ?? enabledIntegrations).map((id) => (
+                  <span key={id} className="status-pill integration">
+                    {id}
+                  </span>
+                ))}
                 <span className={`status-pill ${status}`}>{status}</span>
               </div>
             </div>

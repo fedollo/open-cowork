@@ -1,4 +1,4 @@
-import { Agent, CursorAgentError } from "@cursor/sdk";
+import { Agent, CursorAgentError, type McpServerConfig } from "@cursor/sdk";
 import { requireApiKey } from "../env.js";
 
 type AgentInstance = Awaited<ReturnType<typeof Agent.create>>;
@@ -22,6 +22,7 @@ function isAgentNotFound(err: unknown): boolean {
 export async function createAgent(opts: {
   cwd: string;
   model: string;
+  mcpServers?: Record<string, McpServerConfig>;
 }): Promise<{ agent: AgentInstance; agentId: string }> {
   const apiKey = requireApiKey();
   const agent = await Agent.create({
@@ -31,6 +32,9 @@ export async function createAgent(opts: {
       cwd: opts.cwd,
       settingSources: [...LOCAL_SETTING_SOURCES],
     },
+    ...(opts.mcpServers && Object.keys(opts.mcpServers).length > 0
+      ? { mcpServers: opts.mcpServers }
+      : {}),
   });
   const agentId = agent.agentId;
   return { agent, agentId };
@@ -42,20 +46,35 @@ export async function createAgent(opts: {
  */
 export async function getOrResumeAgent(
   sessionId: string,
-  opts: { agentId: string; cwd: string; model: string },
+  opts: {
+    agentId: string;
+    cwd: string;
+    model: string;
+    mcpServers?: Record<string, McpServerConfig>;
+  },
 ): Promise<{ agent: AgentInstance; agentId: string; recreated: boolean }> {
   const existing = registry.get(sessionId);
   if (existing) {
-    return { agent: existing.agent, agentId: existing.agent.agentId, recreated: false };
+    return {
+      agent: existing.agent,
+      agentId: existing.agent.agentId,
+      recreated: false,
+    };
   }
 
   const apiKey = requireApiKey();
+  const mcpOpt =
+    opts.mcpServers && Object.keys(opts.mcpServers).length > 0
+      ? { mcpServers: opts.mcpServers }
+      : {};
+
   try {
     const agent = await Agent.resume(opts.agentId, {
       apiKey,
       local: {
         settingSources: [...LOCAL_SETTING_SOURCES],
       },
+      ...mcpOpt,
     });
     registry.set(sessionId, { agent, currentRun: null });
     return { agent, agentId: agent.agentId, recreated: false };
@@ -68,6 +87,7 @@ export async function getOrResumeAgent(
     const { agent, agentId } = await createAgent({
       cwd: opts.cwd,
       model: opts.model,
+      mcpServers: opts.mcpServers,
     });
     registry.set(sessionId, { agent, currentRun: null });
     return { agent, agentId, recreated: true };

@@ -4,6 +4,7 @@ import { serve } from "@hono/node-server";
 import { env } from "./env.js";
 import { sessionsRoutes } from "./routes/sessions.js";
 import { fsRoutes } from "./routes/fs.js";
+import { integrationsRoutes } from "./routes/integrations.js";
 import { disposeAll } from "./agents/registry.js";
 
 const app = new Hono();
@@ -23,6 +24,7 @@ app.get("/health", (c) =>
 
 app.route("/sessions", sessionsRoutes);
 app.route("/fs", fsRoutes);
+app.route("/integrations", integrationsRoutes);
 
 app.onError((err, c) => {
   console.error(err);

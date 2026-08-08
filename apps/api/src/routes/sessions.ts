@@ -1,7 +1,12 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { nanoid } from "nanoid";
-import type { Session, AgentStreamEvent, SessionMode } from "@open-cowork/shared";
+import type {
+  Session,
+  AgentStreamEvent,
+  SessionMode,
+  IntegrationId,
+} from "@open-cowork/shared";
 import { env } from "../env.js";
 import { getSession, listSessions, saveSession } from "../store/sessions.js";
 import {
@@ -16,29 +21,41 @@ import type { SDKMessage } from "@cursor/sdk";
 import { mapSdkEvent } from "../agents/stream-map.js";
 import { buildGauntletPrompt } from "../gauntlet/prompt.js";
 import { detectGauntletPhase } from "../gauntlet/detect-phase.js";
+import {
+  buildMcpServers,
+  IntegrationConfigError,
+  normalizeIntegrationIds,
+} from "../integrations/build-mcp.js";
 
 const gauntletSchema = z.object({
   qualityBar: z.string().min(1),
   boundary: z.string().optional(),
 });
 
+const integrationsSchema = z
+  .array(z.enum(["github", "atlascloud", "replicate"]))
+  .optional();
+
 const createSchema = z.object({
   cwd: z.string().min(1),
   model: z.string().min(1).optional(),
   mode: z.enum(["normal", "gauntlet"]).optional(),
   gauntlet: gauntletSchema.optional(),
+  integrations: integrationsSchema,
 });
 
 const messageSchema = z.object({
   prompt: z.string().min(1),
   mode: z.enum(["normal", "gauntlet"]).optional(),
   gauntlet: gauntletSchema.optional(),
+  integrations: integrationsSchema,
 });
 
 function normalizeSession(session: Session): Session {
   return {
     ...session,
     mode: session.mode ?? "normal",
+    integrations: session.integrations ?? [],
   };
 }
 
@@ -80,12 +97,27 @@ sessionsRoutes.post("/", async (c) => {
     );
   }
 
+  const integrations = normalizeIntegrationIds(body.integrations);
+  let mcpServers;
+  try {
+    mcpServers = buildMcpServers(integrations);
+  } catch (err) {
+    if (err instanceof IntegrationConfigError) {
+      return c.json({ error: err.message }, 400);
+    }
+    throw err;
+  }
+
   const model = body.model ?? env.defaultModel;
   const id = nanoid(12);
   const now = new Date().toISOString();
 
   try {
-    const { agent, agentId } = await createAgent({ cwd: body.cwd, model });
+    const { agent, agentId } = await createAgent({
+      cwd: body.cwd,
+      model,
+      mcpServers,
+    });
     registerAgent(id, agent);
 
     const session: Session = {
@@ -105,6 +137,7 @@ sessionsRoutes.post("/", async (c) => {
               boundary: body.gauntlet.boundary?.trim() || undefined,
             }
           : undefined,
+      integrations,
       messages: [],
     };
     await saveSession(session);
@@ -120,6 +153,7 @@ sessionsRoutes.post("/", async (c) => {
       status: session.status,
       mode: session.mode,
       gauntlet: session.gauntlet,
+      integrations: session.integrations,
     });
   } catch (err) {
     const message =
@@ -147,12 +181,26 @@ sessionsRoutes.post("/:id/messages", async (c) => {
 
   const mode: SessionMode = body.mode ?? session.mode ?? "normal";
   const gauntletCfg = body.gauntlet ?? session.gauntlet;
+  const integrations: IntegrationId[] =
+    body.integrations !== undefined
+      ? normalizeIntegrationIds(body.integrations)
+      : (session.integrations ?? []);
 
   if (mode === "gauntlet" && !gauntletCfg?.qualityBar?.trim()) {
     return c.json(
       { error: "Gauntlet mode requires gauntlet.qualityBar" },
       400,
     );
+  }
+
+  let mcpServers;
+  try {
+    mcpServers = buildMcpServers(integrations);
+  } catch (err) {
+    if (err instanceof IntegrationConfigError) {
+      return c.json({ error: err.message }, 400);
+    }
+    throw err;
   }
 
   const userGoal = body.prompt.trim();
@@ -186,6 +234,7 @@ sessionsRoutes.post("/:id/messages", async (c) => {
           agentId: session.agentId,
           cwd: session.cwd,
           model: session.model,
+          mcpServers,
         });
         if (recreated) {
           session.agentId = agentId;
@@ -197,6 +246,7 @@ sessionsRoutes.post("/:id/messages", async (c) => {
         }
 
         session.mode = mode;
+        session.integrations = integrations;
         if (mode === "gauntlet" && gauntletCfg) {
           session.gauntlet = {
             qualityBar: gauntletCfg.qualityBar.trim(),
@@ -232,7 +282,10 @@ sessionsRoutes.post("/:id/messages", async (c) => {
         session.updatedAt = new Date().toISOString();
         await saveSession(session);
 
-        const run = await agent.send(agentPrompt);
+        const run = await agent.send(
+          agentPrompt,
+          Object.keys(mcpServers).length > 0 ? { mcpServers } : undefined,
+        );
         setCurrentRun(id, run);
 
         let assistantText = "";

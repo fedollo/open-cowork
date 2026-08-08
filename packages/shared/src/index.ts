@@ -2,9 +2,19 @@ export type SessionStatus = "idle" | "running" | "error" | "done";
 
 export type SessionMode = "normal" | "gauntlet";
 
+export type IntegrationId = "github" | "atlascloud" | "replicate";
+
 export interface GauntletConfig {
   qualityBar: string;
   boundary?: string;
+}
+
+export interface IntegrationInfo {
+  id: IntegrationId;
+  label: string;
+  description: string;
+  envKey: string;
+  configured: boolean;
 }
 
 export interface Session {
@@ -18,6 +28,7 @@ export interface Session {
   status: SessionStatus;
   mode: SessionMode;
   gauntlet?: GauntletConfig;
+  integrations?: IntegrationId[];
   messages: ChatMessage[];
 }
 
@@ -33,6 +44,7 @@ export interface CreateSessionRequest {
   model?: string;
   mode?: SessionMode;
   gauntlet?: GauntletConfig;
+  integrations?: IntegrationId[];
 }
 
 export interface CreateSessionResponse {
@@ -46,12 +58,14 @@ export interface CreateSessionResponse {
   status: SessionStatus;
   mode: SessionMode;
   gauntlet?: GauntletConfig;
+  integrations?: IntegrationId[];
 }
 
 export interface SendMessageRequest {
   prompt: string;
   mode?: SessionMode;
   gauntlet?: GauntletConfig;
+  integrations?: IntegrationId[];
 }
 
 export interface FsTreeNode {
