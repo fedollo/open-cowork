@@ -3,6 +3,8 @@ import type {
   CreateSessionResponse,
   FsTreeNode,
   GauntletConfig,
+  IntegrationId,
+  IntegrationInfo,
   Session,
   SessionMode,
   SessionStatus,
@@ -24,11 +26,19 @@ export async function getSession(id: string): Promise<Session> {
   return res.json();
 }
 
+export async function listIntegrations(): Promise<IntegrationInfo[]> {
+  const res = await fetch(`${BASE}/integrations`);
+  if (!res.ok) throw new Error(await res.text());
+  const body = (await res.json()) as { integrations: IntegrationInfo[] };
+  return body.integrations;
+}
+
 export async function createSession(opts: {
   cwd: string;
   model?: string;
   mode?: SessionMode;
   gauntlet?: GauntletConfig;
+  integrations?: IntegrationId[];
 }): Promise<CreateSessionResponse> {
   const res = await fetch(`${BASE}/sessions`, {
     method: "POST",
@@ -66,6 +76,7 @@ export async function streamMessage(
     prompt: string;
     mode?: SessionMode;
     gauntlet?: GauntletConfig;
+    integrations?: IntegrationId[];
   },
   onEvent: (event: AgentStreamEvent) => void,
   signal?: AbortSignal,

@@ -464,6 +464,71 @@ button {
   background: color-mix(in srgb, var(--accent) 12%, var(--bg));
 }
 
+.integrations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.integration-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  cursor: pointer;
+  font-size: 0.75rem;
+}
+
+.integration-row.on {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  background: color-mix(in srgb, var(--accent) 10%, var(--bg));
+}
+
+.integration-row.missing.on {
+  border-color: color-mix(in srgb, var(--warning) 50%, var(--border));
+}
+
+.integration-row input {
+  margin-top: 0.15rem;
+  accent-color: var(--accent);
+}
+
+.integration-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.integration-label {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.integration-badge {
+  font-size: 0.62rem;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+  word-break: break-all;
+}
+
+.integration-badge.ready {
+  color: color-mix(in srgb, var(--accent) 80%, var(--text-muted));
+}
+
+.integration-badge.warn {
+  color: var(--warning);
+}
+
+.hint-muted {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
 .sidebar-textarea {
   width: 100%;
   resize: vertical;
@@ -508,6 +573,12 @@ button {
 .status-pill.gauntlet {
   color: var(--warning);
   border-color: color-mix(in srgb, var(--warning) 40%, var(--border));
+}
+
+.status-pill.integration {
+  text-transform: none;
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
 }
 
 .gauntlet-hint {

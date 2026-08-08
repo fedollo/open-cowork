@@ -7,7 +7,7 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "test": "tsx --test src/gauntlet/prompt.test.ts"
+    "test": "tsx --test src/gauntlet/prompt.test.ts src/integrations/build-mcp.test.ts"
   },
   "dependencies": {
     "@open-cowork/shared": "workspace:*",

@@ -40,6 +40,10 @@ Edit `.env`:
 ```
 CURSOR_API_KEY=your_key
 PORT=8787
+# Optional MCP integrations — see .env.example / README Integrations
+# GITHUB_TOKEN=          # https://github.com/settings/tokens
+# ATLASCLOUD_API_KEY=    # key only; base URL not needed for MCP
+# REPLICATE_API_TOKEN=
 ```
 
 `.env` is read at API startup from the **repo root**. Restart `pnpm dev` after changes.
