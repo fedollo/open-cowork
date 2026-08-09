@@ -20,8 +20,8 @@ export const INTEGRATION_CATALOG: IntegrationDef[] = [
   },
   {
     id: "atlascloud",
-    label: "Atlas Cloud",
-    description: "Image / video / LLM models via atlascloud-mcp",
+    label: "Atlas",
+    description: "Atlas Cloud — image / video / LLM models via atlascloud-mcp",
     envKey: "ATLASCLOUD_API_KEY",
     envKeys: ["ATLASCLOUD_API_KEY"],
   },

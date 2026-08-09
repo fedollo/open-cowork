@@ -429,19 +429,23 @@ export function App() {
           )}
 
           <span className="field-label">Integrations</span>
-          <div className="integrations-list" role="group" aria-label="Integrations">
+          <div
+            className="integrations-panel"
+            role="group"
+            aria-label="Integrations"
+          >
             {integrationCatalog.map((item) => {
               const checked = enabledIntegrations.includes(item.id);
               return (
                 <label
                   key={item.id}
-                  className={`integration-row${checked ? " on" : ""}${
+                  className={`integration-chip${checked ? " on" : ""}${
                     !item.configured ? " missing" : ""
                   }`}
                   title={
                     item.configured
                       ? item.description
-                      : `${item.description} — set ${item.envKey} in .env`
+                      : `Set ${item.envKey} in .env — ${item.description}`
                   }
                 >
                   <input
@@ -449,16 +453,15 @@ export function App() {
                     checked={checked}
                     onChange={() => toggleIntegration(item.id)}
                   />
-                  <span className="integration-meta">
-                    <span className="integration-label">{item.label}</span>
-                    <span
-                      className={`integration-badge${
-                        item.configured ? " ready" : " warn"
-                      }`}
-                    >
-                      {item.configured ? "ready" : `needs ${item.envKey}`}
-                    </span>
-                  </span>
+                  <span className="integration-chip-label">{item.label}</span>
+                  <span
+                    className={`integration-dot${
+                      item.configured ? " ready" : " warn"
+                    }`}
+                    aria-label={
+                      item.configured ? "ready" : `needs ${item.envKey}`
+                    }
+                  />
                 </label>
               );
             })}
