@@ -25,8 +25,8 @@ If `corepack enable` fails (permissions), install pnpm manually: [pnpm.io/instal
 ### 1. Clone
 
 ```bash
-git clone https://github.com/fedollo/open-loop.git
-cd open-loop
+git clone https://github.com/fedollo/open-cowork.git
+cd open-cowork
 ```
 
 ### 2. Environment

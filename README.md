@@ -11,7 +11,7 @@ It uses Cursor’s agent runtime via the npm package `@cursor/sdk` (third-party 
 **~4–8 min first run** (mostly `pnpm install`). You need [Node.js](https://nodejs.org/) ≥ 22.13, [pnpm](https://pnpm.io) 9+, and a [Cursor API key](https://cursor.com/dashboard/integrations).
 
 ```bash
-git clone https://github.com/fedollo/open-loop.git && cd open-loop
+git clone https://github.com/fedollo/open-cowork.git && cd open-cowork
 cp .env.example .env   # add CURSOR_API_KEY=your_key inside .env
 corepack enable && pnpm install   # first install: ~2–4 min
 pnpm dev                          # wait for API + Vite lines (see below)
