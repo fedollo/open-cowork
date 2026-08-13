@@ -74,6 +74,18 @@ export interface FsTreeNode {
   type: "file" | "dir";
 }
 
+export interface WorkspaceFileResponse {
+  path: string;
+  content: string;
+}
+
+/** Relative path the Gauntlet agent maintains in the workspace root. */
+export const GAUNTLET_PROGRESS_REL_PATH = ".open-loop/gauntlet-progress.md";
+
+/** Legacy path from pre–Open Loop rename. */
+export const GAUNTLET_PROGRESS_LEGACY_REL_PATH =
+  ".open-cowork/gauntlet-progress.md";
+
 export type GauntletPhase = "lead" | "build" | "critique" | "integrate";
 
 export type AgentStreamEvent =

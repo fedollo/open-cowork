@@ -1,11 +1,50 @@
 import { Hono } from "hono";
-import { readdir, stat } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { readdir, readFile, stat } from "node:fs/promises";
+import { join, resolve, sep } from "node:path";
 import type { FsTreeNode } from "@open-loop/shared";
 
 const SKIP = new Set(["node_modules", ".git", ".open-loop", "dist", ".next", ".turbo"]);
 
 export const fsRoutes = new Hono();
+
+/** Resolve a relative path under cwd; null if unsafe or invalid. */
+export function resolveFileInWorkspace(
+  cwd: string,
+  relPath: string,
+): string | null {
+  if (!relPath || relPath.includes("\0")) return null;
+  const normalized = relPath.replace(/\\/g, "/");
+  if (normalized.startsWith("/") || normalized.includes("..")) return null;
+  const root = resolve(cwd);
+  const full = resolve(root, normalized);
+  if (full !== root && !full.startsWith(root + sep)) return null;
+  return full;
+}
+
+fsRoutes.get("/file", async (c) => {
+  const cwd = c.req.query("cwd");
+  const relPath = c.req.query("path");
+
+  if (!cwd || !relPath) {
+    return c.json({ error: "cwd and path query required" }, 400);
+  }
+
+  const full = resolveFileInWorkspace(cwd, relPath);
+  if (!full) return c.json({ error: "invalid path" }, 400);
+
+  try {
+    const st = await stat(full);
+    if (!st.isFile()) return c.json({ error: "not a file" }, 400);
+    const content = await readFile(full, "utf8");
+    return c.json({ path: relPath.replace(/\\/g, "/"), content });
+  } catch (err) {
+    const code = (err as NodeJS.ErrnoException).code;
+    if (code === "ENOENT") {
+      return c.json({ error: "file not found", path: relPath }, 404);
+    }
+    throw err;
+  }
+});
 
 fsRoutes.get("/tree", async (c) => {
   const cwd = c.req.query("cwd");

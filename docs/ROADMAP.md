@@ -96,7 +96,7 @@ sequenceDiagram
 
 ### 2. Gauntlet Live Board
 
-- [ ] **Not started**
+- [x] **Shipped** (v0.2)
 
 **Problem:** Gauntlet mode instructs the agent to maintain `.open-loop/gauntlet-progress.md`, but the UI never displays it.
 

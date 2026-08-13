@@ -43,6 +43,17 @@ describe("API smoke (optional if server running)", () => {
     assert.match(body.error, /qualityBar/i);
   });
 
+  it("returns 404 for missing workspace file", async () => {
+    const cwd = encodeURIComponent(process.cwd());
+    const path = encodeURIComponent(".open-loop/does-not-exist.md");
+    const res = await maybeFetch(`/fs/file?cwd=${cwd}&path=${path}`);
+    if (!res) {
+      console.log("skip: API not reachable");
+      return;
+    }
+    assert.equal(res.status, 404);
+  });
+
   it("lists fs tree for this repo", async () => {
     const cwd = encodeURIComponent(process.cwd());
     const res = await maybeFetch(`/fs/tree?cwd=${cwd}&depth=1`);

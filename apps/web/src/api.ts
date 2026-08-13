@@ -8,6 +8,7 @@ import type {
   Session,
   SessionMode,
   SessionStatus,
+  WorkspaceFileResponse,
 } from "@open-loop/shared";
 
 const BASE = "/api";
@@ -57,6 +58,21 @@ export async function cancelSession(id: string): Promise<boolean> {
   if (!res.ok) throw new Error(await res.text());
   const data = await res.json();
   return Boolean(data.cancelled);
+}
+
+
+export async function fetchWorkspaceFile(
+  cwd: string,
+  path: string,
+): Promise<WorkspaceFileResponse> {
+  const res = await fetch(
+    `${BASE}/fs/file?cwd=${encodeURIComponent(cwd)}&path=${encodeURIComponent(path)}`,
+  );
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error((body as { error?: string }).error ?? res.statusText);
+  }
+  return res.json();
 }
 
 export async function fetchTree(

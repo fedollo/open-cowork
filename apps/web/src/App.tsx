@@ -19,6 +19,10 @@ import {
   streamMessage,
 } from "./api";
 import { GAUNTLET_EXAMPLE } from "./examples";
+import {
+  loadGauntletProgressFile,
+  renderGauntletMarkdown,
+} from "./gauntlet-progress";
 
 interface SessionSummary {
   id: string;
@@ -59,6 +63,13 @@ export function App() {
   const [creating, setCreating] = useState(false);
   const [sending, setSending] = useState(false);
   const [gauntletPhase, setGauntletPhase] = useState<string | null>(null);
+  const [rightTab, setRightTab] = useState<"files" | "activity" | "gauntlet">(
+    "files",
+  );
+  const [gauntletProgress, setGauntletProgress] = useState<string | null>(null);
+  const [gauntletProgressPath, setGauntletProgressPath] = useState<string | null>(
+    null,
+  );
   const [integrationCatalog, setIntegrationCatalog] = useState<
     IntegrationInfo[]
   >([]);
@@ -110,12 +121,26 @@ export function App() {
     }
   }, []);
 
+  const loadGauntletProgress = useCallback(async (cwd: string) => {
+    const file = await loadGauntletProgressFile(cwd);
+    if (file) {
+      setGauntletProgress(file.content);
+      setGauntletProgressPath(file.path);
+    } else {
+      setGauntletProgress(null);
+      setGauntletProgressPath(null);
+    }
+  }, []);
+
   const selectSession = useCallback(
     async (id: string) => {
       setError(null);
       setLiveAssistant("");
       setActivity([]);
       setGauntletPhase(null);
+      setGauntletProgress(null);
+      setGauntletProgressPath(null);
+      setRightTab("files");
       setActiveId(id);
       try {
         const s = await getSession(id);
@@ -126,11 +151,14 @@ export function App() {
         setBoundary(s.gauntlet?.boundary ?? "");
         setEnabledIntegrations(s.integrations ?? []);
         void loadTree(s.cwd);
+        if (s.mode === "gauntlet") {
+          void loadGauntletProgress(s.cwd);
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load session");
       }
     },
-    [loadTree],
+    [loadTree, loadGauntletProgress],
   );
 
   const fillGauntletExample = () => {
@@ -176,7 +204,15 @@ export function App() {
     }
   };
 
-  const handleEvent = useCallback((event: AgentStreamEvent) => {
+  const refreshGauntletProgress = useCallback(
+    (cwd: string) => {
+      void loadGauntletProgress(cwd);
+    },
+    [loadGauntletProgress],
+  );
+
+  const handleEvent = useCallback(
+    (event: AgentStreamEvent, opts?: { cwd?: string; isGauntlet?: boolean }) => {
     switch (event.type) {
       case "assistant_text":
         setLiveAssistant((prev) => prev + event.text);
@@ -227,6 +263,7 @@ export function App() {
             text: event.detail ?? event.phase,
           },
         ]);
+        if (opts?.isGauntlet && opts.cwd) refreshGauntletProgress(opts.cwd);
         break;
       case "error":
         setError(event.message);
@@ -249,9 +286,12 @@ export function App() {
             text: `run ${event.status}${event.runId ? ` (${event.runId})` : ""}`,
           },
         ]);
+        if (opts?.isGauntlet && opts.cwd) refreshGauntletProgress(opts.cwd);
         break;
     }
-  }, []);
+  },
+    [refreshGauntletProgress],
+  );
 
   const handleSend = async () => {
     if (!activeId || !prompt.trim() || sending) return;
@@ -267,6 +307,7 @@ export function App() {
     setLiveAssistant("");
     setStatus("running");
     setGauntletPhase(mode === "gauntlet" ? "lead" : null);
+    if (mode === "gauntlet") setRightTab("gauntlet");
 
     const displayContent =
       mode === "gauntlet"
@@ -303,6 +344,9 @@ export function App() {
     const ac = new AbortController();
     abortRef.current = ac;
 
+    const runCwd = session?.cwd ?? cwdInput.trim();
+    const isGauntletRun = mode === "gauntlet";
+
     try {
       await streamMessage(
         activeId,
@@ -318,7 +362,8 @@ export function App() {
               : undefined,
           integrations: enabledIntegrations,
         },
-        handleEvent,
+        (event) =>
+          handleEvent(event, { cwd: runCwd, isGauntlet: isGauntletRun }),
         ac.signal,
       );
       const refreshed = await getSession(activeId);
@@ -326,6 +371,9 @@ export function App() {
       setStatus(refreshed.status);
       setLiveAssistant("");
       void loadTree(refreshed.cwd);
+      if (refreshed.mode === "gauntlet") {
+        void loadGauntletProgress(refreshed.cwd);
+      }
       void refreshSessions();
     } catch (err) {
       if ((err as Error).name !== "AbortError") {
@@ -664,8 +712,40 @@ export function App() {
       </main>
 
       <aside className="panel">
+        <div className="panel-tabs" role="tablist" aria-label="Workspace panels">
+          <button
+            type="button"
+            role="tab"
+            className={`panel-tab${rightTab === "files" ? " active" : ""}`}
+            aria-selected={rightTab === "files"}
+            onClick={() => setRightTab("files")}
+          >
+            File
+          </button>
+          <button
+            type="button"
+            role="tab"
+            className={`panel-tab${rightTab === "activity" ? " active" : ""}`}
+            aria-selected={rightTab === "activity"}
+            onClick={() => setRightTab("activity")}
+          >
+            Activity
+          </button>
+          {(session?.mode ?? mode) === "gauntlet" && (
+            <button
+              type="button"
+              role="tab"
+              className={`panel-tab gauntlet-tab${rightTab === "gauntlet" ? " active" : ""}`}
+              aria-selected={rightTab === "gauntlet"}
+              onClick={() => setRightTab("gauntlet")}
+            >
+              Gauntlet
+            </button>
+          )}
+        </div>
+        <div className="panel-body">
+        {rightTab === "files" && (
         <div className="panel-section">
-          <div className="panel-title">File</div>
           <div className="tree">
             {tree.length === 0 ? (
               <div className="tree-node">No files</div>
@@ -691,8 +771,9 @@ export function App() {
             )}
           </div>
         </div>
+        )}
+        {rightTab === "activity" && (
         <div className="panel-section">
-          <div className="panel-title">Activity</div>
           <div className="activity">
             {activity.length === 0 ? (
               <div className="activity-item">Waiting for events…</div>
@@ -708,6 +789,37 @@ export function App() {
               ))
             )}
           </div>
+        </div>
+        )}
+        {rightTab === "gauntlet" && (session?.mode ?? mode) === "gauntlet" && (
+          <div className="panel-section">
+            <div className="gauntlet-board">
+              {gauntletProgressPath && (
+                <div className="gauntlet-board-meta">{gauntletProgressPath}</div>
+              )}
+              {gauntletProgress ? (
+                <div
+                  className="gauntlet-board-content"
+                  dangerouslySetInnerHTML={{
+                    __html: renderGauntletMarkdown(gauntletProgress),
+                  }}
+                />
+              ) : (
+                <div className="gauntlet-board-empty">
+                  No progress file yet. The agent writes{" "}
+                  <code>.open-loop/gauntlet-progress.md</code> during a Gauntlet
+                  run.
+                  {gauntletPhase && (
+                    <>
+                      {" "}
+                      Current phase: <strong>{gauntletPhase}</strong>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
         </div>
       </aside>
     </div>
