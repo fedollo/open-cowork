@@ -8,7 +8,7 @@ import type {
   Session,
   SessionMode,
   SessionStatus,
-} from "@open-cowork/shared";
+} from "@open-loop/shared";
 
 const BASE = "/api";
 

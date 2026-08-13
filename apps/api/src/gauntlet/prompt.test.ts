@@ -15,7 +15,7 @@ describe("buildGauntletPrompt", () => {
     assert.match(out, /Do not touch billing APIs/);
     assert.match(out, /SEPARATE harsh critic/i);
     assert.match(out, /fresh context/i);
-    assert.match(out, /\.open-cowork\/gauntlet-progress\.md/);
+    assert.match(out, /\.open-loop\/gauntlet-progress\.md/);
     assert.match(out, /blind A\/B/i);
     assert.match(out, /Do not stop after a fixed number of rounds/);
   });

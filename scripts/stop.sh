@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Stop Open Cowork API/UI without restarting.
+# Stop Open Loop API/UI without restarting.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -19,7 +19,7 @@ kill_port() {
   fi
 }
 
-echo "Open Cowork — stop"
+echo "Open Loop — stop"
 kill_port "$API_PORT"
 kill_port "$WEB_PORT"
 pkill -9 -f "$ROOT/apps/api.*tsx watch" 2>/dev/null || true

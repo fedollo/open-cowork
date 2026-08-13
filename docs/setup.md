@@ -25,8 +25,8 @@ If `corepack enable` fails (permissions), install pnpm manually: [pnpm.io/instal
 ### 1. Clone
 
 ```bash
-git clone https://github.com/fedollo/open-cowork.git
-cd open-cowork
+git clone https://github.com/fedollo/open-loop.git
+cd open-loop
 ```
 
 ### 2. Environment
@@ -54,7 +54,7 @@ PORT=8787
 pnpm install
 ```
 
-First run typically takes 2–4 minutes. `pnpm dev` runs a `predev` hook that builds `@open-cowork/shared` automatically.
+First run typically takes 2–4 minutes. `pnpm dev` runs a `predev` hook that builds `@open-loop/shared` automatically.
 
 ### 4. Start dev servers
 
@@ -65,7 +65,7 @@ pnpm dev
 Wait for both lines in the terminal:
 
 ```
-Open Cowork API on http://localhost:8787
+Open Loop API on http://localhost:8787
 VITE v… ready in … ms
   ➜  Local:   http://localhost:5173/
 ```

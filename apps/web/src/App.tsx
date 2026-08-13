@@ -8,7 +8,7 @@ import type {
   Session,
   SessionMode,
   SessionStatus,
-} from "@open-cowork/shared";
+} from "@open-loop/shared";
 import {
   cancelSession,
   createSession,
@@ -359,7 +359,7 @@ export function App() {
     <div className="app">
       <aside className="sidebar">
         <div className="brand">
-          <h1>Open Cowork</h1>
+          <h1>Open Loop</h1>
           <p>Local agentic workspace</p>
         </div>
 
@@ -564,7 +564,7 @@ export function App() {
             {(session.mode ?? mode) === "gauntlet" && (
               <div className="gauntlet-hint">
                 Progress file:{" "}
-                <code>.open-cowork/gauntlet-progress.md</code> in the workspace
+                <code>.open-loop/gauntlet-progress.md</code> in the workspace
               </div>
             )}
 

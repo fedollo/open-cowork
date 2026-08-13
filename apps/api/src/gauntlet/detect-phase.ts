@@ -1,4 +1,4 @@
-import type { AgentStreamEvent, GauntletPhase } from "@open-cowork/shared";
+import type { AgentStreamEvent, GauntletPhase } from "@open-loop/shared";
 
 const PHASE_PATTERNS: Array<{ phase: GauntletPhase; re: RegExp }> = [
   { phase: "critique", re: /\b(critic|critique|harsh critic|quality bar|a\/b)\b/i },

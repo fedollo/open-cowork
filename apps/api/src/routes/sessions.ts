@@ -6,7 +6,7 @@ import type {
   AgentStreamEvent,
   SessionMode,
   IntegrationId,
-} from "@open-cowork/shared";
+} from "@open-loop/shared";
 import { env } from "../env.js";
 import { getSession, listSessions, saveSession } from "../store/sessions.js";
 import {

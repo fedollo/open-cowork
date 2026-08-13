@@ -1,4 +1,4 @@
-import type { AgentStreamEvent } from "@open-cowork/shared";
+import type { AgentStreamEvent } from "@open-loop/shared";
 import type { SDKMessage } from "@cursor/sdk";
 
 /** Map SDK stream messages to our AgentStreamEvent union. */

@@ -14,7 +14,7 @@ describe("gauntlet prompt", () => {
     assert.match(out, /Gauntlet Loop/);
     assert.ok(out.includes(GAUNTLET_EXAMPLE.goal.slice(0, 40)));
     assert.ok(out.includes("SEPARATE harsh critic"));
-    assert.ok(out.includes(".open-cowork/gauntlet-progress.md"));
+    assert.ok(out.includes(".open-loop/gauntlet-progress.md"));
     assert.ok(out.includes(GAUNTLET_EXAMPLE.boundary.slice(0, 20)));
   });
 });

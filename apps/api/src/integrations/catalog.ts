@@ -1,4 +1,4 @@
-import type { IntegrationId, IntegrationInfo } from "@open-cowork/shared";
+import type { IntegrationId, IntegrationInfo } from "@open-loop/shared";
 
 export interface IntegrationDef {
   id: IntegrationId;

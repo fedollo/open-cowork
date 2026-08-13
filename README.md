@@ -1,23 +1,23 @@
-# Open Cowork
+# Open Loop
 
 A **local** web mini-app for agentic workspaces: pick a folder, describe a goal, and let an agent work on your files. Chat, file tree, and live activity in one UI.
 
 It uses Cursor’s agent runtime via the npm package `@cursor/sdk` (third-party dependency).
 
-> **Not affiliated with Cursor / Anysphere.** Independent, unofficial project. “Cursor” is a trademark of its respective owners. Use of the SDK and APIs is subject to Cursor’s [Terms of Service](https://cursor.com/terms-of-service). Each user provides their **own** `CURSOR_API_KEY`.
+> **Not affiliated with Cursor / Anysphere or Anthropic.** Independent, unofficial project. “Cursor” and “Claude Cowork” are trademarks of their respective owners. **Open Loop** is not Claude Cowork. Use of the SDK and APIs is subject to Cursor’s [Terms of Service](https://cursor.com/terms-of-service). Each user provides their **own** `CURSOR_API_KEY`.
 
 ## Quick Start
 
 **~4–8 min first run** (mostly `pnpm install`). You need [Node.js](https://nodejs.org/) ≥ 22.13, [pnpm](https://pnpm.io) 9+, and a [Cursor API key](https://cursor.com/dashboard/integrations).
 
 ```bash
-git clone https://github.com/fedollo/open-cowork.git && cd open-cowork
+git clone https://github.com/fedollo/open-loop.git && cd open-loop
 cp .env.example .env   # add CURSOR_API_KEY=your_key inside .env
 corepack enable && pnpm install   # first install: ~2–4 min
 pnpm dev                          # wait for API + Vite lines (see below)
 ```
 
-Open http://localhost:5173 once both startup lines appear (`Open Cowork API on http://localhost:8787` and `Local: http://localhost:5173`). Optional check:
+Open http://localhost:5173 once both startup lines appear (`Open Loop API on http://localhost:8787` and `Local: http://localhost:5173`). Optional check:
 
 ```bash
 curl http://localhost:8787/health   # expect "ok":true and "hasApiKey":true
@@ -28,7 +28,7 @@ curl http://localhost:8787/health   # expect "ok":true and "hasApiKey":true
 ```
 Terminal                          Browser (localhost:5173)
 ─────────────────────────         ┌──────────┬─────────────┬──────────┐
-Open Cowork API on :8787  ✓       │ sidebar  │ empty chat  │ File     │
+Open Loop API on :8787  ✓       │ sidebar  │ empty chat  │ File     │
 VITE ready on :5173       ✓       │ (folder, │ “Pick a…”   │ Activity │
                                   │ sessions)│             │          │
                                   └──────────┴─────────────┴──────────┘
@@ -70,7 +70,7 @@ Follow-up messages in the composer · **Stop** cancels an active stream · Gaunt
 
 Reload → select session in sidebar → send a new message. After an API restart, agent context may be fresh but local history is kept.
 
-Session files: `.open-cowork/sessions/` (gitignored). Gauntlet may write `.open-cowork/gauntlet-progress.md` in the workspace.
+Session files: `.open-loop/sessions/` (gitignored). Gauntlet may write `.open-loop/gauntlet-progress.md` in the workspace.
 
 ## Gauntlet mode
 
@@ -100,6 +100,10 @@ Enabling an integration without its key returns **400** with a clear message. Re
 | `apps/api` | Hono + `@cursor/sdk` |
 | `packages/shared` | Shared types |
 
+## Roadmap
+
+Post-MVP work — diff review, Gauntlet live board, session export, folder picker, presets, checkpoints — is tracked in [docs/ROADMAP.md](docs/ROADMAP.md). Contributions welcome.
+
 ## MVP limitations
 
 Absolute folder path (no picker) · local agents only · no auth/multi-tenant · one lead agent per session.
@@ -114,7 +118,7 @@ pnpm test   # unit + i18n + API smoke (if localhost:8787 is up)
 
 - **`CURSOR_API_KEY not set` / 500 on create** → Set key in root `.env`, restart `pnpm dev`. Check `curl localhost:8787/health` → `"hasApiKey":true`.
 - **Port in use (8787/5173)** → `pnpm stop` or `pnpm restart`.
-- **UI up, API calls fail** → Wait for `Open Cowork API on http://localhost:8787` before opening the UI; `pnpm dev` must run both API and web.
+- **UI up, API calls fail** → Wait for `Open Loop API on http://localhost:8787` before opening the UI; `pnpm dev` must run both API and web.
 - **Empty file tree** → Path must be **absolute** and exist.
 - **Start Gauntlet greyed out** → Fill **Quality bar** and goal.
 - **Integration requires … in .env** → Add the key from the error / badge, restart API (`pnpm restart`), then retry.

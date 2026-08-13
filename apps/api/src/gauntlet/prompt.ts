@@ -1,7 +1,7 @@
 /**
  * Gauntlet Loop orchestration prompt builder.
  * Pattern popularized by Matt Shumer (Claude of Duty / somethingbig.ai/gauntlet-loop).
- * Open Cowork wraps the user goal + quality bar; Cursor Agent fans out builders/critics via Task.
+ * Open Loop wraps the user goal + quality bar; Cursor Agent fans out builders/critics via Task.
  */
 
 export interface BuildGauntletPromptInput {
@@ -31,7 +31,7 @@ export function buildGauntletPrompt(input: BuildGauntletPromptInput): string {
     "4. Never let the builder grade its own work. Critics must inspect the REAL artifacts (files, test output, screenshots if available) — not the builder's summary.",
     "5. Critics compare our output directly against the quality bar, using a blind A/B comparison when possible. If ours loses, name the largest meaningful gap and send it back for another round.",
     "6. Keep looping. Do not stop after a fixed number of rounds. Continue until our output wins against the bar, or the human stops the run.",
-    "7. Maintain a live progress file at `.open-cowork/gauntlet-progress.md` in the workspace root. Update it as work evolves (pieces, critic verdicts, gaps, next steps).",
+    "7. Maintain a live progress file at `.open-loop/gauntlet-progress.md` in the workspace root. Update it as work evolves (pieces, critic verdicts, gaps, next steps).",
     "8. Use subagents heavily. Prefer parallel builders when pieces are independent.",
   ];
 

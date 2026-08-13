@@ -20,7 +20,7 @@ importers:
       '@hono/node-server':
         specifier: ^1.13.8
         version: 1.19.17(hono@4.12.34)
-      '@open-cowork/shared':
+      '@open-loop/shared':
         specifier: workspace:*
         version: link:../../packages/shared
       dotenv:
@@ -48,7 +48,7 @@ importers:
 
   apps/web:
     dependencies:
-      '@open-cowork/shared':
+      '@open-loop/shared':
         specifier: workspace:*
         version: link:../../packages/shared
       react:

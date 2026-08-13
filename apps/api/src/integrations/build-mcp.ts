@@ -1,5 +1,5 @@
 import type { McpServerConfig } from "@cursor/sdk";
-import type { IntegrationId } from "@open-cowork/shared";
+import type { IntegrationId } from "@open-loop/shared";
 import {
   INTEGRATION_CATALOG,
   isIntegrationId,

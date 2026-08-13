@@ -1,18 +1,18 @@
 {
-  "name": "open-cowork",
+  "name": "open-loop",
   "private": true,
   "version": "0.1.0",
   "description": "Local agentic workspace UI powered by the Cursor Agent SDK (unofficial)",
   "scripts": {
-    "predev": "pnpm --filter @open-cowork/shared build",
-    "dev": "pnpm -r --parallel --filter @open-cowork/api --filter @open-cowork/web dev",
-    "build": "pnpm -r --filter @open-cowork/shared --filter @open-cowork/api --filter @open-cowork/web build",
-    "dev:api": "pnpm --filter @open-cowork/api dev",
-    "dev:web": "pnpm --filter @open-cowork/web dev",
+    "predev": "pnpm --filter @open-loop/shared build",
+    "dev": "pnpm -r --parallel --filter @open-loop/api --filter @open-loop/web dev",
+    "build": "pnpm -r --filter @open-loop/shared --filter @open-loop/api --filter @open-loop/web build",
+    "dev:api": "pnpm --filter @open-loop/api dev",
+    "dev:web": "pnpm --filter @open-loop/web dev",
     "restart": "bash scripts/restart.sh",
     "stop": "bash scripts/stop.sh",
-    "test": "pnpm --filter @open-cowork/api test && tsx --test tests/**/*.test.ts",
-    "test:api": "pnpm --filter @open-cowork/api test",
+    "test": "pnpm --filter @open-loop/api test && tsx --test tests/**/*.test.ts",
+    "test:api": "pnpm --filter @open-loop/api test",
     "test:app": "tsx --test tests/**/*.test.ts"
   },
   "devDependencies": {
