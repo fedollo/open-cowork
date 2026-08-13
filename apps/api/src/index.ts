@@ -31,7 +31,7 @@ app.onError((err, c) => {
   return c.json({ error: err.message }, 500);
 });
 
-console.log(`Open Cowork API on http://localhost:${env.port}`);
+console.log(`Open Loop API on http://localhost:${env.port}`);
 if (!env.apiKey) {
   console.warn("WARNING: CURSOR_API_KEY not set — create/send will fail until configured.");
 }

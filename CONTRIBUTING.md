@@ -1,4 +1,4 @@
-# Contributing to Open Cowork
+# Contributing to Open Loop
 
 Thanks for your interest. This is an unofficial open-source project.
 
@@ -16,14 +16,15 @@ Requirements: Node.js ≥ 22.13, pnpm 9+.
 
 - Keep MVP scope: no Electron, multi-tenant cloud agents, or user auth
 - Code and comments in English
-- Never commit `.env`, API keys, or runtime folders (`.open-cowork/`)
-- Before a PR: `pnpm --filter @open-cowork/shared build` and typecheck api/web
+- Never commit `.env`, API keys, or runtime folders (`.open-loop/`)
+- Before a PR: `pnpm --filter @open-loop/shared build` and typecheck api/web
 
 ## Pull requests
 
 1. Fork + branch from `main`
 2. Explain *why* the change matters
 3. Update the README if setup or behavior changes
+4. Check [docs/ROADMAP.md](docs/ROADMAP.md) for planned work; reference a roadmap item in your PR description when applicable
 
 ## Code of conduct
 

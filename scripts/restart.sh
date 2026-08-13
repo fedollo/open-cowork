@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Kill Open Cowork API/UI processes and restart pnpm dev.
+# Kill Open Loop API/UI processes and restart pnpm dev.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -19,7 +19,7 @@ kill_port() {
   fi
 }
 
-echo "Open Cowork — restart"
+echo "Open Loop — restart"
 echo "root: $ROOT"
 
 kill_port "$API_PORT"

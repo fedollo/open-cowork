@@ -1,9 +1,9 @@
 import { Hono } from "hono";
 import { readdir, stat } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import type { FsTreeNode } from "@open-cowork/shared";
+import type { FsTreeNode } from "@open-loop/shared";
 
-const SKIP = new Set(["node_modules", ".git", ".open-cowork", "dist", ".next", ".turbo"]);
+const SKIP = new Set(["node_modules", ".git", ".open-loop", "dist", ".next", ".turbo"]);
 
 export const fsRoutes = new Hono();
 

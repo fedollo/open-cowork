@@ -1,5 +1,5 @@
 {
-  "name": "@open-cowork/api",
+  "name": "@open-loop/api",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -10,7 +10,7 @@
     "test": "tsx --test src/gauntlet/prompt.test.ts src/integrations/build-mcp.test.ts"
   },
   "dependencies": {
-    "@open-cowork/shared": "workspace:*",
+    "@open-loop/shared": "workspace:*",
     "@cursor/sdk": "^1.0.0",
     "@hono/node-server": "^1.13.8",
     "dotenv": "^16.4.7",

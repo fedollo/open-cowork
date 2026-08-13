@@ -25,6 +25,7 @@ function walk(dir: string, out: string[] = []): string[] {
     if (
       name.name === "node_modules" ||
       name.name === "dist" ||
+      name.name === ".open-loop" ||
       name.name === ".open-cowork" ||
       name.name === "plans" ||
       name.name.startsWith(".")

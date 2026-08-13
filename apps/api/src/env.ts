@@ -4,6 +4,17 @@ import { fileURLToPath } from "node:url";
 import { existsSync } from "node:fs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+function resolveSessionsDir(): string {
+  if (process.env.SESSIONS_DIR) return process.env.SESSIONS_DIR;
+  const root = resolve(__dirname, "../../..");
+  const nextDir = resolve(root, ".open-loop/sessions");
+  const legacyDir = resolve(root, ".open-cowork/sessions");
+  if (existsSync(nextDir)) return nextDir;
+  if (existsSync(legacyDir)) return legacyDir;
+  return nextDir;
+}
+
 const rootEnv = resolve(__dirname, "../../../.env");
 const localEnv = resolve(__dirname, "../../.env");
 
@@ -15,9 +26,7 @@ export const env = {
   apiKey: process.env.CURSOR_API_KEY ?? "",
   port: Number(process.env.PORT ?? 8787),
   defaultModel: process.env.DEFAULT_MODEL ?? "composer-2.5",
-  sessionsDir:
-    process.env.SESSIONS_DIR ??
-    resolve(__dirname, "../../../.open-cowork/sessions"),
+  sessionsDir: resolveSessionsDir(),
 };
 
 export function requireApiKey(): string {

@@ -1,6 +1,6 @@
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import type { Session } from "@open-cowork/shared";
+import type { Session } from "@open-loop/shared";
 import { env } from "../env.js";
 
 async function ensureDir(): Promise<void> {
