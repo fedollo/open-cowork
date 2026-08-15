@@ -6,6 +6,7 @@ import { sessionsRoutes } from "./routes/sessions.js";
 import { fsRoutes } from "./routes/fs.js";
 import { workspaceRoutes } from "./routes/workspace.js";
 import { integrationsRoutes } from "./routes/integrations.js";
+import { presetsRoutes } from "./routes/presets.js";
 import { disposeAll } from "./agents/registry.js";
 
 const app = new Hono();
@@ -27,6 +28,7 @@ app.route("/sessions", sessionsRoutes);
 app.route("/fs", fsRoutes);
 app.route("/workspace", workspaceRoutes);
 app.route("/integrations", integrationsRoutes);
+app.route("/presets", presetsRoutes);
 
 app.onError((err, c) => {
   console.error(err);

@@ -171,7 +171,7 @@ Theme: reduce friction for repeat use and Gauntlet setup.
 
 ### 5. Workspace Presets
 
-- [ ] **Not started**
+- [x] **Shipped** (v0.3)
 
 **Problem:** Power users repeat the same cwd, model, mode, integrations, and quality bar.
 
