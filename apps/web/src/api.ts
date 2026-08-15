@@ -9,6 +9,7 @@ import type {
   SessionMode,
   SessionStatus,
   WorkspaceChangesResponse,
+  WorkspaceContextResponse,
   WorkspaceDiffResponse,
   WorkspaceFileResponse,
   WorkspacePreset,
@@ -171,6 +172,20 @@ export async function fetchWorkspaceChanges(
   const params = new URLSearchParams({ cwd });
   if (baseline) params.set("baseline", baseline);
   const res = await fetch(`${BASE}/workspace/changes?${params.toString()}`);
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error((body as { error?: string }).error ?? res.statusText);
+  }
+  return res.json();
+}
+
+
+
+export async function fetchWorkspaceContext(
+  cwd: string,
+): Promise<WorkspaceContextResponse> {
+  const params = new URLSearchParams({ cwd });
+  const res = await fetch(`${BASE}/workspace/context?${params.toString()}`);
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error((body as { error?: string }).error ?? res.statusText);

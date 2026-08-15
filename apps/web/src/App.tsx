@@ -9,6 +9,7 @@ import type {
   Session,
   SessionMode,
   SessionStatus,
+  WorkspaceContextEntry,
   WorkspacePreset,
 } from "@open-loop/shared";
 import {
@@ -24,6 +25,7 @@ import {
   fetchRecentFolders,
   pickFolder,
   fetchWorkspaceChanges,
+  fetchWorkspaceContext,
   fetchWorkspaceDiff,
   getSession,
   listIntegrations,
@@ -107,6 +109,11 @@ export function App() {
   const [presetsLoading, setPresetsLoading] = useState(false);
   const [recentFolders, setRecentFolders] = useState<string[]>([]);
   const [pickingFolder, setPickingFolder] = useState(false);
+  const [contextPanelOpen, setContextPanelOpen] = useState(true);
+  const [workspaceContext, setWorkspaceContext] = useState<
+    WorkspaceContextEntry[]
+  >([]);
+  const [contextLoading, setContextLoading] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -147,7 +154,10 @@ export function App() {
     try {
       const result = await pickFolder();
       setRecentFolders(result.recents);
-      if (result.path) setCwdInput(result.path);
+      if (result.path) {
+        setCwdInput(result.path);
+        void loadWorkspaceContext(result.path);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Folder picker failed");
     } finally {
@@ -173,6 +183,7 @@ export function App() {
     setEnabledIntegrations(preset.integrations ?? []);
     setSelectedTemplateId("");
     setError(null);
+    void loadWorkspaceContext(preset.cwd);
   };
 
   const handleLoadPreset = (id: string) => {
@@ -271,6 +282,24 @@ export function App() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [session?.messages, liveAssistant]);
 
+
+  const loadWorkspaceContext = useCallback(async (cwd: string) => {
+    const trimmed = cwd.trim();
+    if (!trimmed) {
+      setWorkspaceContext([]);
+      return;
+    }
+    setContextLoading(true);
+    try {
+      const data = await fetchWorkspaceContext(trimmed);
+      setWorkspaceContext(data.files);
+    } catch {
+      setWorkspaceContext([]);
+    } finally {
+      setContextLoading(false);
+    }
+  }, []);
+
   const loadTree = useCallback(async (cwd: string) => {
     try {
       const data = await fetchTree(cwd);
@@ -309,6 +338,19 @@ export function App() {
     },
     [],
   );
+
+
+  useEffect(() => {
+    const trimmed = cwdInput.trim();
+    if (!trimmed) {
+      setWorkspaceContext([]);
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      void loadWorkspaceContext(trimmed);
+    }, 400);
+    return () => window.clearTimeout(timer);
+  }, [cwdInput, loadWorkspaceContext]);
 
   useEffect(() => {
     if (rightTab === "changes" && session?.cwd) {
@@ -712,6 +754,70 @@ export function App() {
               </select>
             </>
           )}
+
+
+          <div className="context-panel">
+            <button
+              type="button"
+              className="context-panel-toggle"
+              aria-expanded={contextPanelOpen}
+              onClick={() => setContextPanelOpen((open) => !open)}
+            >
+              Context
+              {contextLoading ? " (loading…)" : ""}
+            </button>
+            {contextPanelOpen && (
+              <div className="context-panel-body">
+                {contextLoading && workspaceContext.length === 0 ? (
+                  <p className="hint-muted">Scanning workspace…</p>
+                ) : null}
+                {!contextLoading && !cwdInput.trim() ? (
+                  <p className="hint-muted">Enter a folder to inspect context.</p>
+                ) : null}
+                {cwdInput.trim() ? (
+                  <>
+                    <p className="context-subheading">Rules &amp; docs</p>
+                    <ul className="context-file-list">
+                      {workspaceContext.map((file) => (
+                        <li key={file.path} className="context-file-item">
+                          <div className="context-file-head">
+                            <code>{file.path}</code>
+                            {!file.exists && (
+                              <span className="context-missing">not found</span>
+                            )}
+                          </div>
+                          {file.exists && file.preview ? (
+                            <pre className="context-preview">
+                              {file.preview}
+                              {file.truncated ? "\n…" : ""}
+                            </pre>
+                          ) : null}
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="context-subheading">Session integrations</p>
+                    {enabledIntegrations.length === 0 ? (
+                      <p className="hint-muted">None selected for the next session.</p>
+                    ) : (
+                      <ul className="context-integration-list">
+                        {enabledIntegrations.map((id) => {
+                          const info = integrationCatalog.find((i) => i.id === id);
+                          const label = info?.label ?? id;
+                          const ready = info?.configured ?? false;
+                          return (
+                            <li key={id}>
+                              {label}
+                              {!ready ? " (needs env key)" : ""}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                  </>
+                ) : null}
+              </div>
+            )}
+          </div>
 
           <label htmlFor="model">Model</label>
           <input

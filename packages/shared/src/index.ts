@@ -109,6 +109,19 @@ export interface WorkspaceDiffResponse {
   diff: string;
 }
 
+export interface WorkspaceContextEntry {
+  path: string;
+  exists: boolean;
+  preview?: string;
+  truncated?: boolean;
+}
+
+export interface WorkspaceContextResponse {
+  cwd: string;
+  files: WorkspaceContextEntry[];
+}
+
+
 /** Relative path the Gauntlet agent maintains in the workspace root. */
 export const GAUNTLET_PROGRESS_REL_PATH = ".open-loop/gauntlet-progress.md";
 
