@@ -106,10 +106,11 @@ export const QUALITY_BAR_TEMPLATES: QualityBarTemplate[] = [
     label: "Video thumbnail (Atlas)",
     category: "visual",
     integrations: ["atlascloud"],
-    goal: "Generate a 1280×720 video thumbnail for a product demo or release walkthrough. Save as assets/demo-thumbnail.png with a short title overlay (max 5 words).",
+    goal: "Generate a 1280×720 demo thumbnail for Open Loop (local agentic workspace: pick folder → agent works → review changes). Match the style of assets/open-loop-banner.png (dark UI, green accent #3d9a6a). Title overlay max 5 words, e.g. \"Open Loop Demo\". Save as assets/open-loop-demo-thumbnail.png.",
     qualityBar:
-      "Title is readable at 320px preview width. High contrast, no text clipped at edges. PNG saved under assets/ with dimensions noted in a one-line README or docs note.",
-    boundary: "Only assets/ and docs/ or README. No code changes.",
+      "Open assets/open-loop-demo-thumbnail.png: title readable at 320px (YouTube-style preview). Visual style matches open-loop-banner.png (dark + #3d9a6a). README or docs/setup.md has one line explaining where to use this thumbnail.",
+    boundary:
+      "Only assets/, README.md, and docs/setup.md. Use Atlas to generate the image. Do not change apps/, packages/, or API code.",
   },
   {
     id: "product-one-pager",

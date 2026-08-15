@@ -269,7 +269,7 @@ Theme: make agent edits reversible and workspace context transparent.
 
 ### 8. Rules & Context Inspector
 
-- [ ] **Not started**
+- [x] **Shipped** (v0.4)
 
 **Problem:** It is unclear what workspace context the agent receives (Cursor rules, AGENTS.md, MCP config).
 

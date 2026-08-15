@@ -3,6 +3,7 @@ import { stat } from "node:fs/promises";
 import { resolve } from "node:path";
 import type {
   WorkspaceChangesResponse,
+  WorkspaceContextResponse,
   WorkspaceDiffResponse,
 } from "@open-loop/shared";
 import { resolveFileInWorkspace } from "./fs.js";
@@ -11,6 +12,10 @@ import {
   listChangesSinceBaseline,
   listGitWorkingTreeChanges,
 } from "../sessions/git-snapshot.js";
+import {
+  resolveWorkspaceRoot,
+  scanWorkspaceContext,
+} from "../workspace/context-scan.js";
 
 export const workspaceRoutes = new Hono();
 
@@ -96,3 +101,22 @@ workspaceRoutes.get("/diff", async (c) => {
   };
   return c.json(body);
 });
+
+workspaceRoutes.get("/context", async (c) => {
+  const cwd = c.req.query("cwd");
+
+  if (!cwd) return c.json({ error: "cwd query required" }, 400);
+
+  const resolved = await resolveWorkspaceRoot(cwd);
+  if ("error" in resolved) {
+    return c.json({ error: resolved.error }, resolved.status);
+  }
+
+  const files = await scanWorkspaceContext(resolved.root);
+  const body: WorkspaceContextResponse = {
+    cwd: resolved.root,
+    files,
+  };
+  return c.json(body);
+});
+

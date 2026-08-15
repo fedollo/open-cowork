@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import { describe, it } from "node:test";
-import type { WorkspaceChangesResponse, WorkspaceDiffResponse } from "@open-loop/shared";
+import type { WorkspaceChangesResponse, WorkspaceContextResponse, WorkspaceDiffResponse } from "@open-loop/shared";
 import { parseNameStatusLines } from "../sessions/git-snapshot.js";
 import { workspaceRoutes } from "./workspace.js";
 
@@ -94,5 +94,34 @@ describe("GET /diff", () => {
       `/diff?cwd=${encodeURIComponent(cwd)}&path=${encodeURIComponent("../etc/passwd")}`,
     );
     assert.equal(res.status, 400);
+  });
+});
+
+
+describe("GET /context", () => {
+  it("lists detected context files with previews", async () => {
+    const cwd = await mkdtemp(join(tmpdir(), "workspace-ctx-"));
+    await mkdir(join(cwd, ".cursor", "rules"), { recursive: true });
+    await writeFile(join(cwd, "AGENTS.md"), "line1\nline2\n");
+    await writeFile(join(cwd, ".cursor", "rules", "foo.mdc"), "# Rule\nBe helpful.\n");
+
+    const res = await workspaceRoutes.request(
+      `/context?cwd=${encodeURIComponent(cwd)}`,
+    );
+    assert.equal(res.status, 200);
+    const body = (await res.json()) as WorkspaceContextResponse;
+    assert.equal(body.cwd, cwd);
+
+    const agents = body.files.find((f) => f.path === "AGENTS.md");
+    assert.ok(agents?.exists);
+    assert.match(agents?.preview ?? "", /line1/);
+
+    const rule = body.files.find((f) => f.path === ".cursor/rules/foo.mdc");
+    assert.ok(rule?.exists);
+    assert.match(rule?.preview ?? "", /Rule/);
+
+    const missing = body.files.find((f) => f.path === ".cursorrules");
+    assert.ok(missing);
+    assert.equal(missing?.exists, false);
   });
 });
