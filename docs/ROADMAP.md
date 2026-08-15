@@ -214,6 +214,27 @@ Theme: reduce friction for repeat use and Gauntlet setup.
 
 ---
 
+
+### 7. Brand assets
+
+- [x] **Shipped** (v0.3)
+
+**Problem:** No consistent visual identity outside the running app.
+
+**Solution:** Standard banner asset, empty-state hero in the web UI, and docs for GitHub social preview.
+
+**Scope:**
+
+| Layer | Work |
+|-------|------|
+| Assets | `assets/open-loop-banner.png` (1024×576) |
+| Docs | README `## Banner`; social preview steps in `docs/setup.md` |
+| UI | Empty-state hero in `apps/web` (`/open-loop-banner.png`) |
+
+**Manual step (maintainer):** Upload `assets/open-loop-banner.png` to GitHub Social preview.
+
+---
+
 ## v0.4 — Safety
 
 Theme: make agent edits reversible and workspace context transparent.

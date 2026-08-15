@@ -597,6 +597,20 @@ export function App() {
             <p className="hint-muted">Loading integrations…</p>
           )}
 
+          <label htmlFor="sidebar-goal">Goal</label>
+          <textarea
+            id="sidebar-goal"
+            className="sidebar-textarea"
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            placeholder={
+              mode === "gauntlet"
+                ? GAUNTLET_EXAMPLE.goal.slice(0, 80) + "…"
+                : "Describe the goal…"
+            }
+            rows={3}
+          />
+
           <button
             className="btn"
             type="button"
@@ -630,6 +644,13 @@ export function App() {
       <main className="chat">
         {showEmpty ? (
           <div className="empty-state">
+            <img
+              className="empty-state-hero"
+              src="/open-loop-banner.png"
+              alt="Open Loop — local agentic workspace"
+              width={512}
+              height={288}
+            />
             <h2>
               {mode === "gauntlet"
                 ? "Set a goal and a concrete quality bar"
