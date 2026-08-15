@@ -26,7 +26,7 @@ What works today:
 Known MVP limits:
 
 - Folder path must be typed manually (absolute path, no picker)
-- No diff view of agent edits
+- Session diff & review tab (Changes) — v0.2
 - No checkpoint / rollback
 - Session export (markdown download) — v0.2
 - Gauntlet progress file exists on disk but is not shown in the UI
@@ -52,7 +52,7 @@ Theme: close the gap between *what the agent did* and *what changed in your repo
 
 ### 1. Session Diff & Review (flagship)
 
-- [ ] **Not started**
+- [x] **Shipped** (v0.2)
 
 **Problem:** Users see tool activity in the Activity panel but cannot review file changes in a structured way before committing or sending follow-ups.
 
@@ -273,7 +273,7 @@ After this document lands, recommended PR sequence for maximum incremental value
 
 1. Gauntlet Live Board — quick win, low risk
 2. Session Export — low risk, immediately useful ✅
-3. Session Diff & Review — flagship, more work
+3. Session Diff & Review — flagship, more work ✅
 4. Quality Bar Library — extends existing Gauntlet UX
 5. Workspace Presets
 6. Folder Picker

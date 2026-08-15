@@ -8,6 +8,8 @@ import type {
   Session,
   SessionMode,
   SessionStatus,
+  WorkspaceChangesResponse,
+  WorkspaceDiffResponse,
   WorkspaceFileResponse,
 } from "@open-loop/shared";
 
@@ -157,3 +159,33 @@ export async function exportSession(id: string): Promise<void> {
   URL.revokeObjectURL(url);
 }
 
+
+
+export async function fetchWorkspaceChanges(
+  cwd: string,
+  baseline?: string,
+): Promise<WorkspaceChangesResponse> {
+  const params = new URLSearchParams({ cwd });
+  if (baseline) params.set("baseline", baseline);
+  const res = await fetch(`${BASE}/workspace/changes?${params.toString()}`);
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error((body as { error?: string }).error ?? res.statusText);
+  }
+  return res.json();
+}
+
+export async function fetchWorkspaceDiff(
+  cwd: string,
+  path: string,
+  baseline?: string,
+): Promise<WorkspaceDiffResponse> {
+  const params = new URLSearchParams({ cwd, path });
+  if (baseline) params.set("baseline", baseline);
+  const res = await fetch(`${BASE}/workspace/diff?${params.toString()}`);
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error((body as { error?: string }).error ?? res.statusText);
+  }
+  return res.json();
+}
