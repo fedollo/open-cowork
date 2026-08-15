@@ -1,5 +1,5 @@
 import { config } from "dotenv";
-import { resolve, dirname } from "node:path";
+import { resolve, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { existsSync } from "node:fs";
 
@@ -22,11 +22,14 @@ if (existsSync(rootEnv)) config({ path: rootEnv });
 else if (existsSync(localEnv)) config({ path: localEnv });
 else config();
 
+const sessionsDir = resolveSessionsDir();
+
 export const env = {
   apiKey: process.env.CURSOR_API_KEY ?? "",
   port: Number(process.env.PORT ?? 8787),
   defaultModel: process.env.DEFAULT_MODEL ?? "composer-2.5",
-  sessionsDir: resolveSessionsDir(),
+  sessionsDir,
+  presetsPath: join(dirname(sessionsDir), "presets.json"),
 };
 
 export function requireApiKey(): string {

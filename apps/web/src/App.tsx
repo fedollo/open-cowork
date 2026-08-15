@@ -9,6 +9,7 @@ import type {
   Session,
   SessionMode,
   SessionStatus,
+  WorkspacePreset,
 } from "@open-loop/shared";
 import { QUALITY_BAR_TEMPLATES, getQualityBarTemplate } from "@open-loop/shared";
 import {
@@ -20,6 +21,9 @@ import {
   getSession,
   listIntegrations,
   listSessions,
+  listPresets,
+  savePreset,
+  deletePreset,
   exportSession,
   streamMessage,
 } from "./api";
@@ -90,6 +94,11 @@ export function App() {
   const [enabledIntegrations, setEnabledIntegrations] = useState<
     IntegrationId[]
   >([]);
+  const [presets, setPresets] = useState<WorkspacePreset[]>([]);
+  const [selectedPresetId, setSelectedPresetId] = useState("");
+  const [presetNameInput, setPresetNameInput] = useState("");
+  const [presetsLoading, setPresetsLoading] = useState(false);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const runBaselineRef = useRef<string | null>(null);
@@ -112,10 +121,97 @@ export function App() {
     }
   }, []);
 
+
+  const refreshPresets = useCallback(async () => {
+    try {
+      const list = await listPresets();
+      setPresets(list);
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
+
+  const applyWorkspacePreset = (preset: WorkspacePreset) => {
+    setCwdInput(preset.cwd);
+    setModelInput(preset.model);
+    setMode(preset.mode);
+    setQualityBar(preset.gauntlet?.qualityBar ?? "");
+    setBoundary(preset.gauntlet?.boundary ?? "");
+    setEnabledIntegrations(preset.integrations ?? []);
+    setSelectedTemplateId("");
+    setError(null);
+  };
+
+  const handleLoadPreset = (id: string) => {
+    const preset = presets.find((p) => p.id === id);
+    if (!preset) return;
+    setSelectedPresetId(id);
+    applyWorkspacePreset(preset);
+  };
+
+  const handleSavePreset = async () => {
+    const name = presetNameInput.trim();
+    const cwd = cwdInput.trim();
+    if (!name) {
+      setError("Enter a preset name");
+      return;
+    }
+    if (!cwd) {
+      setError("Enter an absolute folder path before saving a preset");
+      return;
+    }
+    if (mode === "gauntlet" && !qualityBar.trim()) {
+      setError("Gauntlet presets require a quality bar");
+      return;
+    }
+    setPresetsLoading(true);
+    setError(null);
+    try {
+      const saved = await savePreset({
+        name,
+        cwd,
+        model: modelInput.trim() || "composer-2.5",
+        mode,
+        gauntlet:
+          mode === "gauntlet"
+            ? {
+                qualityBar: qualityBar.trim(),
+                boundary: boundary.trim() || undefined,
+              }
+            : undefined,
+        integrations: enabledIntegrations,
+      });
+      setPresetNameInput("");
+      setSelectedPresetId(saved.id);
+      await refreshPresets();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save preset");
+    } finally {
+      setPresetsLoading(false);
+    }
+  };
+
+  const handleDeletePreset = async () => {
+    if (!selectedPresetId) return;
+    setPresetsLoading(true);
+    setError(null);
+    try {
+      await deletePreset(selectedPresetId);
+      setSelectedPresetId("");
+      await refreshPresets();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete preset");
+    } finally {
+      setPresetsLoading(false);
+    }
+  };
+
+
   useEffect(() => {
     void refreshSessions();
     void refreshIntegrations();
-  }, [refreshSessions, refreshIntegrations]);
+    void refreshPresets();
+  }, [refreshSessions, refreshIntegrations, refreshPresets]);
 
   const toggleIntegration = (id: IntegrationId) => {
     setEnabledIntegrations((prev) =>
@@ -498,6 +594,52 @@ export function App() {
         </div>
 
         <div className="new-session">
+
+          <span className="field-label">Presets</span>
+          <select
+            id="workspacePreset"
+            className="sidebar-select"
+            value={selectedPresetId}
+            onChange={(e) => {
+              const id = e.target.value;
+              setSelectedPresetId(id);
+              if (id) handleLoadPreset(id);
+            }}
+          >
+            <option value="">Choose a preset…</option>
+            {presets.map((preset) => (
+              <option key={preset.id} value={preset.id}>
+                {preset.name}
+              </option>
+            ))}
+          </select>
+          <div className="preset-actions">
+            <button
+              type="button"
+              className="btn btn-ghost"
+              disabled={presetsLoading || !selectedPresetId}
+              onClick={() => void handleDeletePreset()}
+            >
+              Delete preset
+            </button>
+          </div>
+          <label htmlFor="presetName">Preset name</label>
+          <input
+            id="presetName"
+            value={presetNameInput}
+            onChange={(e) => setPresetNameInput(e.target.value)}
+            placeholder="My workspace preset"
+            spellCheck={false}
+          />
+          <button
+            type="button"
+            className="btn btn-ghost preset-save"
+            disabled={presetsLoading}
+            onClick={() => void handleSavePreset()}
+          >
+            {presetsLoading ? "Saving…" : "Save current as preset"}
+          </button>
+
           <label htmlFor="cwd">Folder (absolute path)</label>
           <input
             id="cwd"

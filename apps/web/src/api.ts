@@ -11,6 +11,7 @@ import type {
   WorkspaceChangesResponse,
   WorkspaceDiffResponse,
   WorkspaceFileResponse,
+  WorkspacePreset,
 } from "@open-loop/shared";
 
 const BASE = "/api";
@@ -188,4 +189,40 @@ export async function fetchWorkspaceDiff(
     throw new Error((body as { error?: string }).error ?? res.statusText);
   }
   return res.json();
+}
+
+
+export async function listPresets(): Promise<WorkspacePreset[]> {
+  const res = await fetch(`${BASE}/presets`);
+  if (!res.ok) throw new Error(await res.text());
+  const body = (await res.json()) as { presets: WorkspacePreset[] };
+  return body.presets;
+}
+
+export async function savePreset(input: {
+  name: string;
+  cwd: string;
+  model: string;
+  mode: SessionMode;
+  gauntlet?: GauntletConfig;
+  integrations?: IntegrationId[];
+}): Promise<WorkspacePreset> {
+  const res = await fetch(`${BASE}/presets`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error((body as { error?: string }).error ?? res.statusText);
+  }
+  return res.json();
+}
+
+export async function deletePreset(id: string): Promise<void> {
+  const res = await fetch(`${BASE}/presets/${id}`, { method: "DELETE" });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error((body as { error?: string }).error ?? res.statusText);
+  }
 }

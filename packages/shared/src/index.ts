@@ -39,6 +39,19 @@ export interface ChatMessage {
   createdAt: string;
 }
 
+
+export interface WorkspacePreset {
+  id: string;
+  name: string;
+  cwd: string;
+  model: string;
+  mode: SessionMode;
+  gauntlet?: GauntletConfig;
+  integrations?: IntegrationId[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface CreateSessionRequest {
   cwd: string;
   model?: string;

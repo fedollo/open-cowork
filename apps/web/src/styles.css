@@ -884,3 +884,14 @@ button {
   white-space: pre-wrap;
   word-break: break-word;
 }
+
+
+.preset-actions {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 0.35rem;
+}
+
+.preset-save {
+  margin-bottom: 0.5rem;
+}
