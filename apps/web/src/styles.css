@@ -576,6 +576,11 @@ button {
   color: var(--warning);
 }
 
+.header-export {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.55rem;
+}
+
 .header-pills {
   display: flex;
   align-items: center;
