@@ -913,3 +913,10 @@ button {
   align-self: stretch;
   white-space: nowrap;
 }
+
+.template-hint {
+  margin: 0.35rem 0 0.75rem;
+  font-size: 0.75rem;
+  color: var(--muted, #8b949e);
+  line-height: 1.35;
+}

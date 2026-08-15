@@ -2,7 +2,9 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { buildGauntletPrompt } from "../apps/api/src/gauntlet/prompt.ts";
 import { detectGauntletPhase } from "../apps/api/src/gauntlet/detect-phase.ts";
-import { GAUNTLET_EXAMPLE } from "../apps/web/src/examples.ts";
+import { getQualityBarTemplate } from "../packages/shared/src/quality-bars/index.ts";
+
+const GAUNTLET_EXAMPLE = getQualityBarTemplate("readme-docs")!;
 
 describe("gauntlet prompt", () => {
   it("embeds goal, bar, critic rules, and progress path", () => {

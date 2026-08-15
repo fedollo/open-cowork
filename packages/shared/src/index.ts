@@ -129,8 +129,13 @@ export type AgentStreamEvent =
   | { type: "run_baseline"; ref: string };
 
 export {
+  QUALITY_BAR_CATEGORY_LABELS,
+  QUALITY_BAR_CATEGORY_ORDER,
   QUALITY_BAR_TEMPLATES,
   getQualityBarTemplate,
+  listQualityBarTemplatesByCategory,
+  type QualityBarCategory,
+  type QualityBarIntegrationId,
   type QualityBarTemplate,
 } from "./quality-bars/index.js";
 
