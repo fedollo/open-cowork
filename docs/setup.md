@@ -99,3 +99,12 @@ Scripts use `bash` and `lsof` (macOS/Linux). On Windows use WSL or kill processe
 ## Custom API port
 
 Vite proxies `/api` to `http://localhost:8787` (hardcoded in `apps/web/vite.config.ts`). If you change `PORT` in `.env`, update the Vite proxy target to match.
+
+
+## GitHub social preview
+
+Upload [`assets/open-loop-banner.png`](../assets/open-loop-banner.png) as the repository social preview image:
+
+**GitHub → Settings → General → Social preview → Upload an image…**
+
+Recommended for forks and the upstream repo so links show the Open Loop banner.
