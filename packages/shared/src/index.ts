@@ -79,6 +79,23 @@ export interface WorkspaceFileResponse {
   content: string;
 }
 
+export interface FileChange {
+  status: string;
+  path: string;
+}
+
+export interface WorkspaceChangesResponse {
+  isGitRepo: boolean;
+  cwd: string;
+  baseline?: string;
+  changes: FileChange[];
+}
+
+export interface WorkspaceDiffResponse {
+  path: string;
+  diff: string;
+}
+
 /** Relative path the Gauntlet agent maintains in the workspace root. */
 export const GAUNTLET_PROGRESS_REL_PATH = ".open-loop/gauntlet-progress.md";
 
@@ -95,4 +112,5 @@ export type AgentStreamEvent =
   | { type: "status"; status: SessionStatus; message?: string }
   | { type: "error"; message: string; retryable?: boolean }
   | { type: "done"; runId?: string; status: "finished" | "error" | "cancelled" }
-  | { type: "gauntlet_phase"; phase: GauntletPhase; detail?: string };
+  | { type: "gauntlet_phase"; phase: GauntletPhase; detail?: string }
+  | { type: "run_baseline"; ref: string };

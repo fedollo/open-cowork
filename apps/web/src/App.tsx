@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type {
   AgentStreamEvent,
   ChatMessage,
+  FileChange,
   FsTreeNode,
   IntegrationId,
   IntegrationInfo,
@@ -13,6 +14,8 @@ import {
   cancelSession,
   createSession,
   fetchTree,
+  fetchWorkspaceChanges,
+  fetchWorkspaceDiff,
   getSession,
   listIntegrations,
   listSessions,
@@ -65,13 +68,20 @@ export function App() {
   const [sending, setSending] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [gauntletPhase, setGauntletPhase] = useState<string | null>(null);
-  const [rightTab, setRightTab] = useState<"files" | "activity" | "gauntlet">(
-    "files",
-  );
+  const [rightTab, setRightTab] = useState<
+    "files" | "changes" | "activity" | "gauntlet"
+  >("files");
   const [gauntletProgress, setGauntletProgress] = useState<string | null>(null);
   const [gauntletProgressPath, setGauntletProgressPath] = useState<string | null>(
     null,
   );
+  const [workspaceChanges, setWorkspaceChanges] = useState<FileChange[]>([]);
+  const [changesIsGitRepo, setChangesIsGitRepo] = useState(true);
+  const [selectedChangePath, setSelectedChangePath] = useState<string | null>(null);
+  const [changeDiff, setChangeDiff] = useState("");
+  const [changesLoading, setChangesLoading] = useState(false);
+  const [runBaseline, setRunBaseline] = useState<string | null>(null);
+
   const [integrationCatalog, setIntegrationCatalog] = useState<
     IntegrationInfo[]
   >([]);
@@ -80,6 +90,7 @@ export function App() {
   >([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const runBaselineRef = useRef<string | null>(null);
 
   const refreshSessions = useCallback(async () => {
     try {
@@ -137,6 +148,42 @@ export function App() {
     }
   }, []);
 
+
+  const loadChanges = useCallback(async (cwd: string, baseline?: string | null) => {
+    setChangesLoading(true);
+    try {
+      const data = await fetchWorkspaceChanges(cwd, baseline ?? undefined);
+      setChangesIsGitRepo(data.isGitRepo);
+      setWorkspaceChanges(data.changes);
+    } catch {
+      setChangesIsGitRepo(false);
+      setWorkspaceChanges([]);
+    } finally {
+      setChangesLoading(false);
+    }
+  }, []);
+
+  const loadChangeDiff = useCallback(
+    async (cwd: string, path: string, baseline?: string | null) => {
+      setSelectedChangePath(path);
+      try {
+        const data = await fetchWorkspaceDiff(cwd, path, baseline ?? undefined);
+        setChangeDiff(
+          data.diff.trim() ? data.diff : "No diff for this file.",
+        );
+      } catch {
+        setChangeDiff("Failed to load diff.");
+      }
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (rightTab === "changes" && session?.cwd) {
+      void loadChanges(session.cwd, runBaselineRef.current);
+    }
+  }, [rightTab, session?.cwd, runBaseline, loadChanges]);
+
   const loadGauntletProgress = useCallback(async (cwd: string) => {
     const file = await loadGauntletProgressFile(cwd);
     if (file) {
@@ -156,6 +203,11 @@ export function App() {
       setGauntletPhase(null);
       setGauntletProgress(null);
       setGauntletProgressPath(null);
+      setWorkspaceChanges([]);
+      setSelectedChangePath(null);
+      setChangeDiff("");
+      setRunBaseline(null);
+      runBaselineRef.current = null;
       setRightTab("files");
       setActiveId(id);
       try {
@@ -281,6 +333,10 @@ export function App() {
         ]);
         if (opts?.isGauntlet && opts.cwd) refreshGauntletProgress(opts.cwd);
         break;
+      case "run_baseline":
+        runBaselineRef.current = event.ref;
+        setRunBaseline(event.ref);
+        break;
       case "error":
         setError(event.message);
         setActivity((prev) => [
@@ -303,10 +359,14 @@ export function App() {
           },
         ]);
         if (opts?.isGauntlet && opts.cwd) refreshGauntletProgress(opts.cwd);
+        if (opts?.cwd) {
+          void loadChanges(opts.cwd, runBaselineRef.current);
+        }
+        if (opts?.cwd && !opts?.isGauntlet) setRightTab("changes");
         break;
     }
   },
-    [refreshGauntletProgress],
+    [refreshGauntletProgress, loadChanges],
   );
 
   const handleSend = async () => {
@@ -323,6 +383,8 @@ export function App() {
     setLiveAssistant("");
     setStatus("running");
     setGauntletPhase(mode === "gauntlet" ? "lead" : null);
+    runBaselineRef.current = null;
+    setRunBaseline(null);
     if (mode === "gauntlet") setRightTab("gauntlet");
 
     const displayContent =
@@ -387,6 +449,7 @@ export function App() {
       setStatus(refreshed.status);
       setLiveAssistant("");
       void loadTree(refreshed.cwd);
+      void loadChanges(refreshed.cwd, runBaselineRef.current);
       if (refreshed.mode === "gauntlet") {
         void loadGauntletProgress(refreshed.cwd);
       }
@@ -574,8 +637,8 @@ export function App() {
             </h2>
             <p>
               {mode === "gauntlet"
-                ? "Gauntlet mode wraps your goal in a builder/critic orchestration loop. Pick an absolute folder path, define an inspectable bar, then start."
-                : "Create a session on the left with an absolute workspace path, then describe what the agent should do. Live stream and file updates appear on the right."}
+                ? "Gauntlet mode wraps your goal in a builder/critic orchestration loop. Set folder, goal, and quality bar in the sidebar, then start."
+                : "Create a session on the left with an absolute workspace path and goal, then start. Live stream and file updates appear on the right."}
             </p>
             {mode === "gauntlet" && (
               <div className="example-card">
@@ -693,12 +756,14 @@ export function App() {
               )}
 
               <div className="composer-row">
+                <label htmlFor="composer-goal">Goal</label>
                 <textarea
+                  id="composer-goal"
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   placeholder={
                     mode === "gauntlet"
-                      ? GAUNTLET_EXAMPLE.goal
+                      ? GAUNTLET_EXAMPLE.goal.slice(0, 80) + "…"
                       : "Describe the goal…"
                   }
                   onKeyDown={(e) => {
@@ -746,6 +811,17 @@ export function App() {
           >
             File
           </button>
+          {session && (
+            <button
+              type="button"
+              role="tab"
+              className={`panel-tab${rightTab === "changes" ? " active" : ""}`}
+              aria-selected={rightTab === "changes"}
+              onClick={() => setRightTab("changes")}
+            >
+              Changes
+            </button>
+          )}
           <button
             type="button"
             role="tab"
@@ -796,6 +872,51 @@ export function App() {
           </div>
         </div>
         )}
+
+        {rightTab === "changes" && session && (
+          <div className="panel-section changes-panel">
+            {changesLoading ? (
+              <div className="changes-empty">Loading changes…</div>
+            ) : !changesIsGitRepo ? (
+              <div className="changes-empty">
+                This workspace is not a git repository.
+              </div>
+            ) : workspaceChanges.length === 0 ? (
+              <div className="changes-empty">
+                No file changes since the start of this run.
+              </div>
+            ) : (
+              <>
+                <ul className="changes-list">
+                  {workspaceChanges.map((change) => (
+                    <li key={change.path}>
+                      <button
+                        type="button"
+                        className={`changes-item${
+                          selectedChangePath === change.path ? " active" : ""
+                        }`}
+                        onClick={() =>
+                          void loadChangeDiff(
+                            session.cwd,
+                            change.path,
+                            runBaselineRef.current,
+                          )
+                        }
+                      >
+                        <span className="changes-status">{change.status}</span>
+                        <span className="changes-path">{change.path}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+                {selectedChangePath && (
+                  <pre className="changes-diff">{changeDiff}</pre>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
         {rightTab === "activity" && (
         <div className="panel-section">
           <div className="activity">

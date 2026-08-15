@@ -19,6 +19,7 @@ import {
 } from "../agents/registry.js";
 import type { SDKMessage } from "@cursor/sdk";
 import { mapSdkEvent } from "../agents/stream-map.js";
+import { getGitHeadRef } from "../sessions/git-snapshot.js";
 import { buildGauntletPrompt } from "../gauntlet/prompt.js";
 import { detectGauntletPhase } from "../gauntlet/detect-phase.js";
 import {
@@ -247,6 +248,11 @@ sessionsRoutes.post("/:id/messages", async (c) => {
             phase: "lead",
             detail: "Gauntlet orchestration prompt sent to lead agent",
           });
+        }
+
+        const runBaseline = await getGitHeadRef(session.cwd);
+        if (runBaseline) {
+          send({ type: "run_baseline", ref: runBaseline });
         }
 
         const { agent, agentId, recreated } = await getOrResumeAgent(id, {
