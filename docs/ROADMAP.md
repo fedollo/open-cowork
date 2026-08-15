@@ -146,7 +146,7 @@ Theme: reduce friction for repeat use and Gauntlet setup.
 
 ### 4. Folder Picker + Recent Folders
 
-- [ ] **Not started**
+- [x] **Shipped** (v0.3)
 
 **Problem:** Users must copy-paste absolute paths manually.
 

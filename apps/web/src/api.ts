@@ -12,6 +12,8 @@ import type {
   WorkspaceDiffResponse,
   WorkspaceFileResponse,
   WorkspacePreset,
+  FolderPickResponse,
+  RecentsResponse,
 } from "@open-loop/shared";
 
 const BASE = "/api";
@@ -225,4 +227,21 @@ export async function deletePreset(id: string): Promise<void> {
     const body = await res.json().catch(() => ({}));
     throw new Error((body as { error?: string }).error ?? res.statusText);
   }
+}
+
+
+export async function fetchRecentFolders(): Promise<string[]> {
+  const res = await fetch(`${BASE}/fs/recents`);
+  if (!res.ok) throw new Error(await res.text());
+  const body = (await res.json()) as RecentsResponse;
+  return body.recents;
+}
+
+export async function pickFolder(): Promise<FolderPickResponse> {
+  const res = await fetch(`${BASE}/fs/pick`, { method: "POST" });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error((body as { error?: string }).error ?? res.statusText);
+  }
+  return res.json();
 }

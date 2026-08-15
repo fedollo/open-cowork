@@ -20,6 +20,7 @@ import {
 import type { SDKMessage } from "@cursor/sdk";
 import { mapSdkEvent } from "../agents/stream-map.js";
 import { getGitHeadRef } from "../sessions/git-snapshot.js";
+import { addRecent } from "../store/recents.js";
 import { buildGauntletPrompt } from "../gauntlet/prompt.js";
 import { detectGauntletPhase } from "../gauntlet/detect-phase.js";
 import {
@@ -161,6 +162,7 @@ sessionsRoutes.post("/", async (c) => {
       messages: [],
     };
     await saveSession(session);
+    void addRecent(session.cwd).catch(() => {});
 
     return c.json({
       id: session.id,

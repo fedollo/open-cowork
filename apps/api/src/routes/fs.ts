@@ -2,6 +2,11 @@ import { Hono } from "hono";
 import { readdir, readFile, stat } from "node:fs/promises";
 import { join, resolve, sep } from "node:path";
 import type { FsTreeNode } from "@open-loop/shared";
+import {
+  FolderPickerUnsupportedError,
+  pickFolderNative,
+} from "../fs/pick-folder.js";
+import { addRecent, listRecents } from "../store/recents.js";
 
 const SKIP = new Set(["node_modules", ".git", ".open-loop", "dist", ".next", ".turbo"]);
 
@@ -86,4 +91,27 @@ fsRoutes.get("/tree", async (c) => {
 
   await walk(root, 1);
   return c.json({ cwd: root, nodes });
+});
+
+
+fsRoutes.get("/recents", async (c) => {
+  const recents = await listRecents();
+  return c.json({ recents });
+});
+
+fsRoutes.post("/pick", async (c) => {
+  try {
+    const path = await pickFolderNative();
+    if (!path) {
+      const recents = await listRecents();
+      return c.json({ path: null, cancelled: true, recents });
+    }
+    const recents = await addRecent(path);
+    return c.json({ path, cancelled: false, recents });
+  } catch (err) {
+    if (err instanceof FolderPickerUnsupportedError) {
+      return c.json({ error: err.message }, 501);
+    }
+    throw err;
+  }
 });
