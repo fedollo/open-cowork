@@ -16,6 +16,7 @@ import {
   getSession,
   listIntegrations,
   listSessions,
+  exportSession,
   streamMessage,
 } from "./api";
 import { GAUNTLET_EXAMPLE } from "./examples";
@@ -62,6 +63,7 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [sending, setSending] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [gauntletPhase, setGauntletPhase] = useState<string | null>(null);
   const [rightTab, setRightTab] = useState<"files" | "activity" | "gauntlet">(
     "files",
@@ -106,6 +108,20 @@ export function App() {
     setEnabledIntegrations((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
+  };
+
+
+  const handleExportSession = async () => {
+    if (!session) return;
+    setExporting(true);
+    setError(null);
+    try {
+      await exportSession(session.id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Export failed");
+    } finally {
+      setExporting(false);
+    }
   };
 
   useEffect(() => {
@@ -595,6 +611,14 @@ export function App() {
                 {session.cwd}
               </span>
               <div className="header-pills">
+                <button
+                  type="button"
+                  className="btn btn-ghost header-export"
+                  disabled={exporting}
+                  onClick={() => void handleExportSession()}
+                >
+                  {exporting ? "Exporting…" : "Export"}
+                </button>
                 {(session.mode ?? mode) === "gauntlet" && (
                   <span className="status-pill gauntlet">
                     gauntlet{gauntletPhase ? ` · ${gauntletPhase}` : ""}

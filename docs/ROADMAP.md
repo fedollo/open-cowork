@@ -28,7 +28,7 @@ Known MVP limits:
 - Folder path must be typed manually (absolute path, no picker)
 - No diff view of agent edits
 - No checkpoint / rollback
-- No session export
+- Session export (markdown download) — v0.2
 - Gauntlet progress file exists on disk but is not shown in the UI
 - Local agents only; no multi-tenant or user auth
 
@@ -119,7 +119,7 @@ sequenceDiagram
 
 ### 3. Session Export
 
-- [ ] **Not started**
+- [x] **Shipped** (v0.2)
 
 **Problem:** No portable artifact for GitHub issues, PR descriptions, or handoff to another developer.
 
@@ -272,7 +272,7 @@ Theme: make agent edits reversible and workspace context transparent.
 After this document lands, recommended PR sequence for maximum incremental value:
 
 1. Gauntlet Live Board — quick win, low risk
-2. Session Export — low risk, immediately useful
+2. Session Export — low risk, immediately useful ✅
 3. Session Diff & Review — flagship, more work
 4. Quality Bar Library — extends existing Gauntlet UX
 5. Workspace Presets

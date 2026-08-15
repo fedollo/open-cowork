@@ -22,6 +22,11 @@ import { mapSdkEvent } from "../agents/stream-map.js";
 import { buildGauntletPrompt } from "../gauntlet/prompt.js";
 import { detectGauntletPhase } from "../gauntlet/detect-phase.js";
 import {
+  buildSessionExportMarkdown,
+  sessionExportFilename,
+} from "../sessions/export-session.js";
+import { listGitWorkingTreeChanges } from "../sessions/git-snapshot.js";
+import {
   buildMcpServers,
   IntegrationConfigError,
   normalizeIntegrationIds,
@@ -73,6 +78,20 @@ sessionsRoutes.get("/", async (c) => {
       };
     }),
   );
+});
+
+
+sessionsRoutes.get("/:id/export", async (c) => {
+  const session = await getSession(c.req.param("id"));
+  if (!session) return c.json({ error: "Session not found" }, 404);
+  const normalized = normalizeSession(session);
+  const gitChanges = await listGitWorkingTreeChanges(normalized.cwd);
+  const markdown = buildSessionExportMarkdown(normalized, gitChanges);
+  const filename = sessionExportFilename(normalized.id);
+  return c.body(markdown, 200, {
+    "Content-Type": "text/markdown; charset=utf-8",
+    "Content-Disposition": `attachment; filename="${filename}"`,
+  });
 });
 
 sessionsRoutes.get("/:id", async (c) => {
