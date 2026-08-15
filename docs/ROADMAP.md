@@ -212,6 +212,8 @@ Theme: reduce friction for repeat use and Gauntlet setup.
 - Four or more built-in templates selectable from the UI.
 - Community can add templates via PR to the shared package.
 
+**Expanded (post-v0.3):** 16 templates across **Visual** (Atlas Cloud), **Writing**, **Marketing**, and **Dev** categories, with integration hints in the Gauntlet sidebar. Visual templates require `ATLASCLOUD_API_KEY` — see [setup.md](setup.md).
+
 ---
 
 

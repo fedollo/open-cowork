@@ -11,7 +11,12 @@ import type {
   SessionStatus,
   WorkspacePreset,
 } from "@open-loop/shared";
-import { QUALITY_BAR_TEMPLATES, getQualityBarTemplate } from "@open-loop/shared";
+import {
+  QUALITY_BAR_CATEGORY_LABELS,
+  QUALITY_BAR_CATEGORY_ORDER,
+  getQualityBarTemplate,
+  listQualityBarTemplatesByCategory,
+} from "@open-loop/shared";
 import {
   cancelSession,
   createSession,
@@ -748,12 +753,34 @@ export function App() {
                 }}
               >
                 <option value="">Choose a template…</option>
-                {QUALITY_BAR_TEMPLATES.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.label}
-                  </option>
+                {QUALITY_BAR_CATEGORY_ORDER.map((category) => (
+                  <optgroup
+                    key={category}
+                    label={QUALITY_BAR_CATEGORY_LABELS[category]}
+                  >
+                    {listQualityBarTemplatesByCategory(category).map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.label}
+                      </option>
+                    ))}
+                  </optgroup>
                 ))}
               </select>
+              {selectedTemplateId && (() => {
+                const template = getQualityBarTemplate(selectedTemplateId);
+                if (!template?.integrations?.length) return null;
+                const parts = template.integrations.map((id) => {
+                  const info = integrationCatalog.find((i) => i.id === id);
+                  const label = info?.label ?? id;
+                  const enabled = enabledIntegrations.includes(id);
+                  return enabled ? label : `${label} (toggle not enabled)`;
+                });
+                return (
+                  <p className="template-hint">
+                    Requires: {parts.join(", ")}
+                  </p>
+                );
+              })()}
               <label htmlFor="qualityBar">Quality bar</label>
               <textarea
                 id="qualityBar"
