@@ -133,3 +133,13 @@ export {
   getQualityBarTemplate,
   type QualityBarTemplate,
 } from "./quality-bars/index.js";
+
+export interface FolderPickResponse {
+  path: string | null;
+  cancelled: boolean;
+  recents: string[];
+}
+
+export interface RecentsResponse {
+  recents: string[];
+}

@@ -108,3 +108,16 @@ Upload [`assets/open-loop-banner.png`](../assets/open-loop-banner.png) as the re
 **GitHub → Settings → General → Social preview → Upload an image…**
 
 Recommended for forks and the upstream repo so links show the Open Loop banner.
+
+
+## Folder picker
+
+The web UI **Browse** button calls `POST /api/fs/pick`, which opens a native folder dialog on the machine running the API:
+
+| OS | Requirement |
+|----|-------------|
+| macOS | Built-in (`osascript`) |
+| Linux | `zenity` installed |
+| Windows | PowerShell + .NET (`FolderBrowserDialog`) |
+
+Recent folders are stored in `.open-loop/recents.json` (max 10) and updated when you pick a folder or create a session.

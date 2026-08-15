@@ -16,6 +16,8 @@ import {
   cancelSession,
   createSession,
   fetchTree,
+  fetchRecentFolders,
+  pickFolder,
   fetchWorkspaceChanges,
   fetchWorkspaceDiff,
   getSession,
@@ -98,6 +100,8 @@ export function App() {
   const [selectedPresetId, setSelectedPresetId] = useState("");
   const [presetNameInput, setPresetNameInput] = useState("");
   const [presetsLoading, setPresetsLoading] = useState(false);
+  const [recentFolders, setRecentFolders] = useState<string[]>([]);
+  const [pickingFolder, setPickingFolder] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -121,6 +125,30 @@ export function App() {
     }
   }, []);
 
+
+
+  const refreshRecents = useCallback(async () => {
+    try {
+      const list = await fetchRecentFolders();
+      setRecentFolders(list);
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
+
+  const handleBrowseFolder = async () => {
+    setPickingFolder(true);
+    setError(null);
+    try {
+      const result = await pickFolder();
+      setRecentFolders(result.recents);
+      if (result.path) setCwdInput(result.path);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Folder picker failed");
+    } finally {
+      setPickingFolder(false);
+    }
+  };
 
   const refreshPresets = useCallback(async () => {
     try {
@@ -211,7 +239,8 @@ export function App() {
     void refreshSessions();
     void refreshIntegrations();
     void refreshPresets();
-  }, [refreshSessions, refreshIntegrations, refreshPresets]);
+    void refreshRecents();
+  }, [refreshSessions, refreshIntegrations, refreshPresets, refreshRecents]);
 
   const toggleIntegration = (id: IntegrationId) => {
     setEnabledIntegrations((prev) =>
@@ -641,13 +670,44 @@ export function App() {
           </button>
 
           <label htmlFor="cwd">Folder (absolute path)</label>
-          <input
-            id="cwd"
-            value={cwdInput}
-            onChange={(e) => setCwdInput(e.target.value)}
-            placeholder="/Users/…/project"
-            spellCheck={false}
-          />
+          <div className="folder-row">
+            <input
+              id="cwd"
+              value={cwdInput}
+              onChange={(e) => setCwdInput(e.target.value)}
+              placeholder="/Users/…/project"
+              spellCheck={false}
+            />
+            <button
+              type="button"
+              className="btn btn-ghost folder-browse"
+              disabled={pickingFolder}
+              onClick={() => void handleBrowseFolder()}
+            >
+              {pickingFolder ? "Opening…" : "Browse"}
+            </button>
+          </div>
+          {recentFolders.length > 0 && (
+            <>
+              <label htmlFor="recentFolder">Recent folders</label>
+              <select
+                id="recentFolder"
+                className="sidebar-select"
+                defaultValue=""
+                onChange={(e) => {
+                  if (e.target.value) setCwdInput(e.target.value);
+                }}
+              >
+                <option value="">Choose recent…</option>
+                {recentFolders.map((path) => (
+                  <option key={path} value={path}>
+                    {path}
+                  </option>
+                ))}
+              </select>
+            </>
+          )}
+
           <label htmlFor="model">Model</label>
           <input
             id="model"

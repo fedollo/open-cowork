@@ -895,3 +895,21 @@ button {
 .preset-save {
   margin-bottom: 0.5rem;
 }
+
+
+.folder-row {
+  display: flex;
+  gap: 0.45rem;
+  align-items: stretch;
+}
+
+.folder-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.folder-browse {
+  flex-shrink: 0;
+  align-self: stretch;
+  white-space: nowrap;
+}
