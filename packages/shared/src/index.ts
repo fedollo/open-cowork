@@ -114,3 +114,9 @@ export type AgentStreamEvent =
   | { type: "done"; runId?: string; status: "finished" | "error" | "cancelled" }
   | { type: "gauntlet_phase"; phase: GauntletPhase; detail?: string }
   | { type: "run_baseline"; ref: string };
+
+export {
+  QUALITY_BAR_TEMPLATES,
+  getQualityBarTemplate,
+  type QualityBarTemplate,
+} from "./quality-bars/index.js";

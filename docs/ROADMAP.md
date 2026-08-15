@@ -194,7 +194,7 @@ Theme: reduce friction for repeat use and Gauntlet setup.
 
 ### 6. Quality Bar Library
 
-- [ ] **Not started**
+- [x] **Shipped** (v0.3)
 
 **Problem:** Writing a concrete Gauntlet quality bar is hard; only one UI example exists today (`apps/web/src/examples.ts`).
 

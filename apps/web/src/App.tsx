@@ -10,6 +10,7 @@ import type {
   SessionMode,
   SessionStatus,
 } from "@open-loop/shared";
+import { QUALITY_BAR_TEMPLATES, getQualityBarTemplate } from "@open-loop/shared";
 import {
   cancelSession,
   createSession,
@@ -58,6 +59,7 @@ export function App() {
   const [mode, setMode] = useState<SessionMode>("normal");
   const [qualityBar, setQualityBar] = useState("");
   const [boundary, setBoundary] = useState("");
+  const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [prompt, setPrompt] = useState("");
   const [status, setStatus] = useState<SessionStatus>("idle");
   const [liveAssistant, setLiveAssistant] = useState("");
@@ -229,13 +231,18 @@ export function App() {
     [loadTree, loadGauntletProgress],
   );
 
-  const fillGauntletExample = () => {
+  const applyQualityBarTemplate = (id: string) => {
+    const template = getQualityBarTemplate(id);
+    if (!template) return;
     setMode("gauntlet");
-    setQualityBar(GAUNTLET_EXAMPLE.qualityBar);
-    setBoundary(GAUNTLET_EXAMPLE.boundary);
-    setPrompt(GAUNTLET_EXAMPLE.goal);
+    setPrompt(template.goal);
+    setQualityBar(template.qualityBar);
+    setBoundary(template.boundary ?? "");
+    setSelectedTemplateId(id);
     setError(null);
   };
+
+  const fillGauntletExample = () => applyQualityBarTemplate("readme-docs");
 
   const handleCreate = async () => {
     const cwd = cwdInput.trim();
@@ -527,6 +534,24 @@ export function App() {
 
           {mode === "gauntlet" && (
             <>
+              <label htmlFor="qualityBarTemplate">Template</label>
+              <select
+                id="qualityBarTemplate"
+                className="sidebar-select"
+                value={selectedTemplateId}
+                onChange={(e) => {
+                  const id = e.target.value;
+                  setSelectedTemplateId(id);
+                  if (id) applyQualityBarTemplate(id);
+                }}
+              >
+                <option value="">Choose a template…</option>
+                {QUALITY_BAR_TEMPLATES.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
               <label htmlFor="qualityBar">Quality bar</label>
               <textarea
                 id="qualityBar"
@@ -542,16 +567,9 @@ export function App() {
                 className="sidebar-textarea"
                 value={boundary}
                 onChange={(e) => setBoundary(e.target.value)}
-                placeholder={GAUNTLET_EXAMPLE.boundary.slice(0, 60) + "…"}
+                placeholder={(GAUNTLET_EXAMPLE.boundary ?? "").slice(0, 60) + "…"}
                 rows={2}
               />
-              <button
-                className="btn btn-ghost"
-                type="button"
-                onClick={fillGauntletExample}
-              >
-                Use example
-              </button>
             </>
           )}
 
@@ -650,7 +668,7 @@ export function App() {
                   <strong>Bar:</strong> {GAUNTLET_EXAMPLE.qualityBar}
                 </p>
                 <p>
-                  <strong>Boundary:</strong> {GAUNTLET_EXAMPLE.boundary}
+                  <strong>Boundary:</strong> {GAUNTLET_EXAMPLE.boundary ?? "—"}
                 </p>
                 <button
                   className="btn"

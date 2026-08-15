@@ -542,6 +542,18 @@ button {
   color: var(--text-muted);
 }
 
+.sidebar-select {
+  width: 100%;
+  padding: 0.45rem 0.55rem;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.85rem;
+  margin-bottom: 0.35rem;
+}
+
 .sidebar-textarea {
   width: 100%;
   resize: vertical;
