@@ -33,6 +33,7 @@ export const env = {
   sessionsDir,
   presetsPath: join(dirname(sessionsDir), "presets.json"),
   recentsPath: join(dirname(sessionsDir), "recents.json"),
+  checkpointsDir: join(dirname(sessionsDir), "checkpoints"),
 };
 
 export function requireApiKey(): string {

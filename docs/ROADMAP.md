@@ -21,13 +21,13 @@ What works today:
 - **Gauntlet mode**: builder vs harsh critic loop with quality bar and optional boundary
 - **Integrations**: optional MCP toggles (GitHub, Atlas Cloud, Replicate)
 - **Session persistence**: `.open-loop/sessions/` on disk; resume after reload
+- **Checkpoints & rollback** (v0.4): optional git stash / filesystem snapshot before each run
 - **Live stream**: SSE events for assistant text, tool calls, Gauntlet phases
 
 Known MVP limits:
 
 - Folder path must be typed manually (absolute path, no picker)
 - Session diff & review tab (Changes) — v0.2
-- No checkpoint / rollback
 - Session export (markdown download) — v0.2
 - Gauntlet progress file exists on disk but is not shown in the UI
 - Local agents only; no multi-tenant or user auth
@@ -38,7 +38,7 @@ Known MVP limits:
 |---------|-------|----------|--------|
 | **v0.2** | Review | Session diff, Gauntlet live board, session export | Planned |
 | **v0.3** | Comfort | Folder picker, workspace presets, quality bar library | Planned |
-| **v0.4** | Safety | Checkpoints & rollback, rules & context inspector | Planned |
+| **v0.4** | Safety | Checkpoints & rollback, rules & context inspector | In progress |
 
 Dates are indicative — this is an OSS project with no fixed deadlines. Features may ship incrementally (e.g. 0.2.0, 0.2.1).
 
@@ -245,7 +245,7 @@ Theme: make agent edits reversible and workspace context transparent.
 
 ### 7. Checkpoint & Rollback
 
-- [ ] **Not started**
+- [x] **Shipped** (v0.4)
 
 **Problem:** Users hesitate to run agents on important branches because changes feel irreversible.
 

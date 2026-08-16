@@ -92,6 +92,26 @@ export async function fetchTree(
   return res.json();
 }
 
+export async function rollbackSession(
+  id: string,
+): Promise<{ rolledBack: { id: string; turn: number }; checkpoints: unknown[] }> {
+  const res = await fetch(`${BASE}/sessions/${id}/rollback`, { method: "POST" });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error((body as { error?: string }).error ?? res.statusText);
+  }
+  return res.json();
+}
+
+export async function createSessionCheckpoint(id: string) {
+  const res = await fetch(`${BASE}/sessions/${id}/checkpoint`, { method: "POST" });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error((body as { error?: string }).error ?? res.statusText);
+  }
+  return res.json();
+}
+
 export async function streamMessage(
   sessionId: string,
   opts: {
@@ -99,6 +119,7 @@ export async function streamMessage(
     mode?: SessionMode;
     gauntlet?: GauntletConfig;
     integrations?: IntegrationId[];
+    checkpointBeforeRun?: boolean;
   },
   onEvent: (event: AgentStreamEvent) => void,
   signal?: AbortSignal,

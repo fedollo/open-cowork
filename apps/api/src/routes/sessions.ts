@@ -6,6 +6,7 @@ import type {
   AgentStreamEvent,
   SessionMode,
   IntegrationId,
+  SessionCheckpoint,
 } from "@open-loop/shared";
 import { env } from "../env.js";
 import { getSession, listSessions, saveSession } from "../store/sessions.js";
@@ -37,6 +38,11 @@ import {
   IntegrationConfigError,
   normalizeIntegrationIds,
 } from "../integrations/build-mcp.js";
+import {
+  CheckpointError,
+  createCheckpoint,
+  rollbackCheckpoint,
+} from "../sessions/checkpoint.js";
 
 const gauntletSchema = z.object({
   qualityBar: z.string().min(1),
@@ -60,6 +66,7 @@ const messageSchema = z.object({
   mode: z.enum(["normal", "gauntlet"]).optional(),
   gauntlet: gauntletSchema.optional(),
   integrations: integrationsSchema,
+  checkpointBeforeRun: z.boolean().optional(),
 });
 
 function normalizeSession(session: Session): Session {
@@ -67,7 +74,20 @@ function normalizeSession(session: Session): Session {
     ...session,
     mode: session.mode ?? "normal",
     integrations: session.integrations ?? [],
+    checkpointBeforeRun: session.checkpointBeforeRun ?? false,
+    checkpoints: session.checkpoints ?? [],
   };
+}
+
+function nextTurn(session: Session): number {
+  return (session.messages?.length ?? 0) + 1;
+}
+
+async function appendCheckpoint(
+  session: Session,
+  checkpoint: SessionCheckpoint,
+): Promise<void> {
+  session.checkpoints = [...(session.checkpoints ?? []), checkpoint];
 }
 
 export const sessionsRoutes = new Hono();
@@ -211,6 +231,8 @@ sessionsRoutes.post("/:id/messages", async (c) => {
     body.integrations !== undefined
       ? normalizeIntegrationIds(body.integrations)
       : (session.integrations ?? []);
+  const checkpointBeforeRun =
+    body.checkpointBeforeRun ?? session.checkpointBeforeRun ?? false;
 
   if (mode === "gauntlet" && !gauntletCfg?.qualityBar?.trim()) {
     return c.json(
@@ -264,6 +286,38 @@ sessionsRoutes.post("/:id/messages", async (c) => {
         const runBaseline = await getGitHeadRef(session.cwd);
         if (runBaseline) {
           send({ type: "run_baseline", ref: runBaseline });
+        }
+
+        session.checkpointBeforeRun = checkpointBeforeRun;
+
+        if (checkpointBeforeRun) {
+          try {
+            const turn = nextTurn(session);
+            const checkpoint = await createCheckpoint({
+              cwd: session.cwd,
+              sessionId: id,
+              turn,
+              checkpointsRoot: env.checkpointsDir,
+            });
+            await appendCheckpoint(session, checkpoint);
+            session.updatedAt = new Date().toISOString();
+            await saveSession(session);
+            send({ type: "checkpoint_created", checkpoint });
+          } catch (err) {
+            const message =
+              err instanceof CheckpointError
+                ? err.message
+                : err instanceof Error
+                  ? err.message
+                  : "Checkpoint failed";
+            send({ type: "error", message });
+            session.status = "error";
+            session.updatedAt = new Date().toISOString();
+            await saveSession(session);
+            send({ type: "done", status: "error" });
+            send({ type: "status", status: "error" });
+            return;
+          }
         }
 
         let agent;
@@ -494,4 +548,69 @@ sessionsRoutes.post("/:id/cancel", async (c) => {
     await saveSession(session);
   }
   return c.json({ cancelled });
+});
+
+sessionsRoutes.post("/:id/checkpoint", async (c) => {
+  const id = c.req.param("id");
+  const raw = await getSession(id);
+  if (!raw) return c.json({ error: "Session not found" }, 404);
+  const session = normalizeSession(raw);
+
+  try {
+    const turn = nextTurn(session);
+    const checkpoint = await createCheckpoint({
+      cwd: session.cwd,
+      sessionId: id,
+      turn,
+      checkpointsRoot: env.checkpointsDir,
+    });
+    await appendCheckpoint(session, checkpoint);
+    session.updatedAt = new Date().toISOString();
+    await saveSession(session);
+    return c.json({ checkpoint, checkpoints: session.checkpoints });
+  } catch (err) {
+    const message =
+      err instanceof CheckpointError
+        ? err.message
+        : err instanceof Error
+          ? err.message
+          : "Checkpoint failed";
+    return c.json({ error: message }, 400);
+  }
+});
+
+sessionsRoutes.post("/:id/rollback", async (c) => {
+  const id = c.req.param("id");
+  const raw = await getSession(id);
+  if (!raw) return c.json({ error: "Session not found" }, 404);
+  const session = normalizeSession(raw);
+
+  const checkpoints = session.checkpoints ?? [];
+  const checkpoint = checkpoints[checkpoints.length - 1];
+  if (!checkpoint) {
+    return c.json({ error: "No checkpoint available for this session." }, 400);
+  }
+
+  try {
+    await rollbackCheckpoint({
+      cwd: session.cwd,
+      checkpoint,
+      checkpointsRoot: env.checkpointsDir,
+    });
+    session.checkpoints = checkpoints.slice(0, -1);
+    session.updatedAt = new Date().toISOString();
+    await saveSession(session);
+    return c.json({
+      rolledBack: checkpoint,
+      checkpoints: session.checkpoints,
+    });
+  } catch (err) {
+    const message =
+      err instanceof CheckpointError
+        ? err.message
+        : err instanceof Error
+          ? err.message
+          : "Rollback failed";
+    return c.json({ error: message }, 400);
+  }
 });
