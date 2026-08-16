@@ -8,7 +8,7 @@ It uses Cursor’s agent runtime via the npm package `@cursor/sdk` (third-party 
 
 ![Open Loop banner](assets/open-loop-banner.png)
 
-Dark banner for docs and GitHub **Social preview** (`Settings → General → Social preview`). Asset: `assets/open-loop-banner.png` (1024×576).
+Dark banner for docs and GitHub **Social preview** (`Settings → General → Social preview`). Asset: `assets/open-loop-banner.png` (1024×576). Product demo clip: `assets/videos/open-loop-demo-15s.mp4` (15s, 720p, with audio).
 
 > **Not affiliated with Cursor / Anysphere or Anthropic.** Independent, unofficial project. “Cursor” and “Claude Cowork” are trademarks of their respective owners. **Open Loop** is not Claude Cowork. Use of the SDK and APIs is subject to Cursor’s [Terms of Service](https://cursor.com/terms-of-service). Each user provides their **own** `CURSOR_API_KEY`.
 

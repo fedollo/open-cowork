@@ -7,7 +7,7 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "test": "tsx --test src/gauntlet/prompt.test.ts src/integrations/build-mcp.test.ts src/routes/fs.test.ts src/sessions/export-session.test.ts src/routes/workspace.test.ts src/routes/presets.test.ts src/store/recents.test.ts"
+    "test": "tsx --test src/agents/run-failure.test.ts src/agents/setting-sources.test.ts src/gauntlet/prompt.test.ts src/integrations/build-mcp.test.ts src/routes/fs.test.ts src/sessions/export-session.test.ts src/routes/workspace.test.ts src/routes/presets.test.ts src/store/recents.test.ts"
   },
   "dependencies": {
     "@open-loop/shared": "workspace:*",

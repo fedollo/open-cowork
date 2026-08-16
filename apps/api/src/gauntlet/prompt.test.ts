@@ -19,4 +19,15 @@ describe("buildGauntletPrompt", () => {
     assert.match(out, /blind A\/B/i);
     assert.match(out, /Do not stop after a fixed number of rounds/);
   });
+
+  it("adds direct video guidance when videoDirectMode is set", () => {
+    const out = buildGauntletPrompt({
+      goal: "Generate a Seedance clip",
+      qualityBar: "MP4 plays in VLC",
+      videoDirectMode: true,
+    });
+
+    assert.match(out, /ONE end-to-end generation/i);
+    assert.match(out, /not to fan out parallel video generations/i);
+  });
 });

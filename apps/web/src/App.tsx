@@ -517,7 +517,9 @@ export function App() {
         setRunBaseline(event.ref);
         break;
       case "error":
-        setError(event.message);
+        setError(
+          event.code ? `${event.message} [${event.code}]` : event.message,
+        );
         setActivity((prev) => [
           ...prev,
           {

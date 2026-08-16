@@ -1,5 +1,6 @@
 import { Agent, CursorAgentError, type McpServerConfig } from "@cursor/sdk";
-import { requireApiKey } from "../env.js";
+import { env, requireApiKey } from "../env.js";
+import { resolveSettingSources } from "./setting-sources.js";
 
 type AgentInstance = Awaited<ReturnType<typeof Agent.create>>;
 type RunInstance = Awaited<ReturnType<AgentInstance["send"]>>;
@@ -11,8 +12,9 @@ interface RegistryEntry {
 
 const registry = new Map<string, RegistryEntry>();
 
-/** Load project + user Cursor layers (skills, rules, AGENTS.md). */
-const LOCAL_SETTING_SOURCES = ["project", "user"] as const;
+function settingSources() {
+  return resolveSettingSources(env.settingSources);
+}
 
 function isAgentNotFound(err: unknown): boolean {
   const msg = err instanceof Error ? err.message : String(err);
@@ -30,7 +32,7 @@ export async function createAgent(opts: {
     model: { id: opts.model },
     local: {
       cwd: opts.cwd,
-      settingSources: [...LOCAL_SETTING_SOURCES],
+      settingSources: settingSources(),
     },
     ...(opts.mcpServers && Object.keys(opts.mcpServers).length > 0
       ? { mcpServers: opts.mcpServers }
@@ -72,7 +74,8 @@ export async function getOrResumeAgent(
     const agent = await Agent.resume(opts.agentId, {
       apiKey,
       local: {
-        settingSources: [...LOCAL_SETTING_SOURCES],
+        cwd: opts.cwd,
+        settingSources: settingSources(),
       },
       ...mcpOpt,
     });
@@ -92,6 +95,20 @@ export async function getOrResumeAgent(
     registry.set(sessionId, { agent, currentRun: null });
     return { agent, agentId, recreated: true };
   }
+}
+
+export async function resetAgentForSession(
+  sessionId: string,
+  opts: {
+    cwd: string;
+    model: string;
+    mcpServers?: Record<string, McpServerConfig>;
+  },
+): Promise<{ agent: AgentInstance; agentId: string }> {
+  await disposeAgent(sessionId);
+  const { agent, agentId } = await createAgent(opts);
+  registerAgent(sessionId, agent);
+  return { agent, agentId };
 }
 
 export function registerAgent(sessionId: string, agent: AgentInstance): void {
@@ -131,6 +148,13 @@ export async function disposeAgent(sessionId: string): Promise<void> {
 export async function disposeAll(): Promise<void> {
   const ids = [...registry.keys()];
   await Promise.all(ids.map((id) => disposeAgent(id)));
+}
+
+export function usesStdioMcp(
+  mcpServers?: Record<string, McpServerConfig>,
+): boolean {
+  if (!mcpServers) return false;
+  return Object.values(mcpServers).some((s) => s.type === "stdio" || !s.type);
 }
 
 export { CursorAgentError };

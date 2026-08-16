@@ -28,6 +28,8 @@ export const env = {
   apiKey: process.env.CURSOR_API_KEY ?? "",
   port: Number(process.env.PORT ?? 8787),
   defaultModel: process.env.DEFAULT_MODEL ?? "composer-2.5",
+  /** Comma-separated Cursor settingSources; default project-only. */
+  settingSources: process.env.OPEN_LOOP_SETTING_SOURCES ?? "project",
   sessionsDir,
   presetsPath: join(dirname(sessionsDir), "presets.json"),
   recentsPath: join(dirname(sessionsDir), "recents.json"),

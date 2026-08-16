@@ -15,10 +15,14 @@ import {
   registerAgent,
   setCurrentRun,
   cancelRun,
+  resetAgentForSession,
+  disposeAgent,
+  usesStdioMcp,
   CursorAgentError,
 } from "../agents/registry.js";
 import type { SDKMessage } from "@cursor/sdk";
 import { mapSdkEvent } from "../agents/stream-map.js";
+import { buildRunFailurePayload, isDirectVideoGoal } from "../agents/run-failure.js";
 import { getGitHeadRef } from "../sessions/git-snapshot.js";
 import { addRecent } from "../store/recents.js";
 import { buildGauntletPrompt } from "../gauntlet/prompt.js";
@@ -226,12 +230,14 @@ sessionsRoutes.post("/:id/messages", async (c) => {
   }
 
   const userGoal = body.prompt.trim();
+  const videoDirectMode = isDirectVideoGoal(userGoal);
   const agentPrompt =
     mode === "gauntlet" && gauntletCfg
       ? buildGauntletPrompt({
           goal: userGoal,
           qualityBar: gauntletCfg.qualityBar,
           boundary: gauntletCfg.boundary,
+          videoDirectMode,
         })
       : userGoal;
 
@@ -241,6 +247,9 @@ sessionsRoutes.post("/:id/messages", async (c) => {
       const send = (event: AgentStreamEvent) => {
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
       };
+
+      const retryAfterError = session.status === "error";
+      const hasStdioMcp = usesStdioMcp(mcpServers);
 
       try {
         send({ type: "status", status: "running" });
@@ -257,19 +266,47 @@ sessionsRoutes.post("/:id/messages", async (c) => {
           send({ type: "run_baseline", ref: runBaseline });
         }
 
-        const { agent, agentId, recreated } = await getOrResumeAgent(id, {
-          agentId: session.agentId,
-          cwd: session.cwd,
-          model: session.model,
-          mcpServers,
-        });
-        if (recreated) {
+        let agent;
+        let agentId: string;
+        let recreated = false;
+
+        if (retryAfterError || hasStdioMcp) {
+          const reset = await resetAgentForSession(id, {
+            cwd: session.cwd,
+            model: session.model,
+            mcpServers,
+          });
+          agent = reset.agent;
+          agentId = reset.agentId;
+          recreated = true;
+          send({
+            type: "status",
+            status: "running",
+            message: retryAfterError
+              ? "Previous run failed — created a fresh agent"
+              : "Fresh agent for MCP integrations",
+          });
+        } else {
+          const resumed = await getOrResumeAgent(id, {
+            agentId: session.agentId,
+            cwd: session.cwd,
+            model: session.model,
+            mcpServers,
+          });
+          agent = resumed.agent;
+          agentId = resumed.agentId;
+          recreated = resumed.recreated;
+        }
+
+        if (recreated && !retryAfterError && !hasStdioMcp) {
           session.agentId = agentId;
           send({
             type: "status",
             status: "running",
             message: "Previous agent lost after restart — created a new one",
           });
+        } else if (recreated) {
+          session.agentId = agentId;
         }
 
         session.mode = mode;
@@ -309,9 +346,21 @@ sessionsRoutes.post("/:id/messages", async (c) => {
         session.updatedAt = new Date().toISOString();
         await saveSession(session);
 
+        const sendOpts: {
+          mcpServers?: typeof mcpServers;
+          local?: { force?: boolean };
+        } = {};
+        if (Object.keys(mcpServers).length > 0) {
+          sendOpts.mcpServers = mcpServers;
+        }
+        if (retryAfterError) {
+          sendOpts.local = { force: true };
+        }
+
+        const runStartedAt = Date.now();
         const run = await agent.send(
           agentPrompt,
-          Object.keys(mcpServers).length > 0 ? { mcpServers } : undefined,
+          Object.keys(sendOpts).length > 0 ? sendOpts : undefined,
         );
         setCurrentRun(id, run);
 
@@ -346,6 +395,8 @@ sessionsRoutes.post("/:id/messages", async (c) => {
         const result = await run.wait();
         setCurrentRun(id, null);
 
+        const durationMs = Date.now() - runStartedAt;
+
         if (assistantText) {
           session.messages.push({
             id: nanoid(8),
@@ -367,10 +418,27 @@ sessionsRoutes.post("/:id/messages", async (c) => {
         await saveSession(session);
 
         if (doneStatus === "error") {
+          console.error("Agent run failed", {
+            sessionId: id,
+            runId: result.id,
+            status: result.status,
+            error: result.error,
+            durationMs: result.durationMs ?? durationMs,
+          });
+          const failure = buildRunFailurePayload(result, {
+            assistantText,
+            durationMs: result.durationMs ?? durationMs,
+          });
           send({
             type: "error",
-            message: `Run failed (${result.id})`,
+            message: failure.message,
+            code: failure.code,
+            suggestApiRestart: failure.suggestApiRestart,
           });
+        }
+
+        if (hasStdioMcp) {
+          await disposeAgent(id);
         }
 
         send({ type: "done", runId: result.id, status: doneStatus });
@@ -380,6 +448,10 @@ sessionsRoutes.post("/:id/messages", async (c) => {
         session.status = "error";
         session.updatedAt = new Date().toISOString();
         await saveSession(session);
+
+        if (hasStdioMcp) {
+          await disposeAgent(id);
+        }
 
         if (err instanceof CursorAgentError) {
           send({
