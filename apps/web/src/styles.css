@@ -775,6 +775,105 @@ button {
   line-height: 1.45;
 }
 
+.gauntlet-board-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.gauntlet-phase-timeline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.gauntlet-phase-step {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.2rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+}
+
+.gauntlet-phase-step.done {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  color: var(--accent);
+}
+
+.gauntlet-phase-step.active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.gauntlet-bar-status {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+}
+
+.gauntlet-bar-status.met {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+  color: var(--accent);
+}
+
+.gauntlet-bar-status.not_met {
+  border-color: color-mix(in srgb, var(--danger) 55%, var(--border));
+  color: var(--danger);
+}
+
+.gauntlet-bar-status.in_progress {
+  border-color: color-mix(in srgb, var(--warning) 55%, var(--border));
+  color: var(--warning);
+}
+
+.gauntlet-bar-status.unknown {
+  color: var(--text-muted);
+}
+
+.gauntlet-structured {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-bottom: 0.75rem;
+}
+
+.gauntlet-structured-section h3 {
+  margin: 0 0 0.25rem;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.gauntlet-structured-section ul {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.gauntlet-structured-section li {
+  margin: 0.2rem 0;
+}
+
+.gauntlet-raw-details {
+  margin-top: 0.5rem;
+}
+
+.gauntlet-raw-details summary {
+  cursor: pointer;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-bottom: 0.35rem;
+}
+
 .gauntlet-board-meta {
   font-family: var(--mono);
   font-size: 0.68rem;

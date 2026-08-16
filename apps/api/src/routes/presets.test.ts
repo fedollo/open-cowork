@@ -29,7 +29,7 @@ describe("presets routes", () => {
         name: "Docs run",
         cwd: "/tmp/project",
         model: "composer-2.5",
-        mode: "normal",
+        gauntlet: { qualityBar: "All docs tests pass" },
         integrations: ["github"],
       }),
     });
@@ -64,7 +64,7 @@ describe("presets routes", () => {
         name: "Bad gauntlet",
         cwd: "/tmp/project",
         model: "composer-2.5",
-        mode: "gauntlet",
+        gauntlet: { qualityBar: "" },
       }),
     });
     assert.equal(res.status, 400);

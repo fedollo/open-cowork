@@ -23,24 +23,22 @@ describe("API smoke (optional if server running)", () => {
     assert.equal(body.ok, true);
   });
 
-  it("rejects gauntlet create without qualityBar", async () => {
+  it("rejects create without qualityBar", async () => {
     const res = await maybeFetch("/sessions");
     if (!res) {
       console.log("skip: API not reachable");
       return;
     }
-    // Only run if health worked; create without bar
     const create = await fetch(`${API}/sessions`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         cwd: process.cwd(),
-        mode: "gauntlet",
       }),
     });
     assert.equal(create.status, 400);
     const body = (await create.json()) as { error: string };
-    assert.match(body.error, /qualityBar/i);
+    assert.match(body.error, /quality bar|qualityBar|Invalid body/i);
   });
 
   it("returns 404 for missing workspace file", async () => {
@@ -99,6 +97,7 @@ describe("API smoke (optional if server running)", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         cwd: process.cwd(),
+        gauntlet: { qualityBar: "Smoke test bar" },
         integrations: ["github"],
       }),
     });

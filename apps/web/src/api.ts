@@ -6,7 +6,6 @@ import type {
   IntegrationId,
   IntegrationInfo,
   Session,
-  SessionMode,
   SessionStatus,
   WorkspaceChangesResponse,
   WorkspaceContextResponse,
@@ -43,8 +42,7 @@ export async function listIntegrations(): Promise<IntegrationInfo[]> {
 export async function createSession(opts: {
   cwd: string;
   model?: string;
-  mode?: SessionMode;
-  gauntlet?: GauntletConfig;
+  gauntlet: GauntletConfig;
   integrations?: IntegrationId[];
   checkpointBeforeRun?: boolean;
 }): Promise<CreateSessionResponse> {
@@ -117,7 +115,6 @@ export async function streamMessage(
   sessionId: string,
   opts: {
     prompt: string;
-    mode?: SessionMode;
     gauntlet?: GauntletConfig;
     integrations?: IntegrationId[];
     checkpointBeforeRun?: boolean;
@@ -242,8 +239,7 @@ export async function savePreset(input: {
   name: string;
   cwd: string;
   model: string;
-  mode: SessionMode;
-  gauntlet?: GauntletConfig;
+  gauntlet: GauntletConfig;
   integrations?: IntegrationId[];
 }): Promise<WorkspacePreset> {
   const res = await fetch(`${BASE}/presets`, {

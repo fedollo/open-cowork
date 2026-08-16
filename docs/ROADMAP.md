@@ -17,8 +17,7 @@ The MVP proves the core session + stream experience. Post-MVP work focuses on **
 What works today:
 
 - **3-column UI**: sidebar (workspace + sessions) · center (chat) · right (File · Activity · Changes · Gauntlet · Context)
-- **Normal mode**: multi-turn chat with Cursor Agent SDK (`local: { cwd }`)
-- **Gauntlet mode**: builder vs harsh critic loop with quality bar, template library (incl. Seedance video), and live progress board
+- **Gauntlet loop**: builder vs harsh critic with quality bar, template library (incl. Seedance video), structured progress board, and live phase timeline
 - **Review**: Changes tab (git diff), session export (markdown), Gauntlet live board
 - **Comfort**: native folder picker, recent folders, workspace presets
 - **Safety**: optional checkpoint before each run + rollback; rules & context inspector
@@ -39,6 +38,7 @@ Known limits:
 | **v0.2** | Review | Session diff, Gauntlet live board, session export | Shipped |
 | **v0.3** | Comfort | Folder picker, workspace presets, quality bar library | Shipped |
 | **v0.4** | Safety | Checkpoints & rollback, rules & context inspector | Shipped |
+| **v0.5** | Gauntlet-first | Gauntlet-only, structured board, Quality Bar Studio (planned) | In progress |
 
 Dates are indicative — this is an OSS project with no fixed deadlines. Features may ship incrementally (e.g. 0.2.0, 0.2.1).
 
@@ -326,9 +326,83 @@ These are intentionally **out of scope** for this roadmap (may be reconsidered l
 - **Multi-tenant auth** — user accounts, teams, hosted instances
 - **Plugin marketplace** — third-party extension store
 
+## v0.5 — Gauntlet-first
+
+Theme: **Open Loop is a Gauntlet studio** — quality bar, builder/critic loop, structured review. Normal chat mode is removed.
+
+> **Parked:** multi-provider / OpenCode adapter roadmap — revisit after Gauntlet UX is mature.
+
+### Product decisions (locked)
+
+| Decision | Choice |
+|----------|--------|
+| Quality Bar Studio UI | Dedicated page `/quality-bars` (not a cramped modal) |
+| Normal mode | Hard cut — Gauntlet only |
+| Custom templates | Committed under `packages/shared/quality-bars/custom/` |
+| Build order | **C (run experience) before B (Studio editor)** |
+
+### 9. Gauntlet-only product
+
+- [x] **Shipped** (v0.5.0)
+
+**Problem:** Two modes dilute the product; Gauntlet is the differentiator.
+
+**Solution:** Remove Normal mode from UI, API, and presets. Every session requires a quality bar.
+
+**Acceptance:** No code path creates or sends a non-Gauntlet session.
+
+---
+
+### 10. Structured Gauntlet board (C1–C3)
+
+- [x] **Shipped** (v0.5.0)
+
+**Problem:** `.open-loop/gauntlet-progress.md` is free-form markdown; the Gauntlet tab does not surface the loop clearly.
+
+**Solution:**
+
+| Layer | Work |
+|-------|------|
+| Shared | Parse progress markdown → `GauntletProgressStructured` (pieces, verdicts, gaps, next steps, rounds, bar status) |
+| Prompt | Suggest `## Pieces`, `## Critic verdicts`, `## Gaps`, `## Next steps`, `Bar status: met\|not met\|in progress` |
+| UI | Phase timeline (`lead → build → critique → integrate`), bar status pill, structured cards + collapsible raw markdown |
+
+**Acceptance:** During a run, pezzi and critic verdicts are visible without reading the full progress file.
+
+---
+
+### 11. Quality Bar Studio (page)
+
+- [ ] **Planned** (v0.5.1+)
+
+**Problem:** Templates live only in `packages/shared` via PR; no UI to create custom bars.
+
+**Solution:** Route **`/quality-bars`**: list built-in + `custom/*.json`, editor, duplicate, delete, **Use in session**. API writes to `packages/shared/quality-bars/custom/` (versioned in git).
+
+**Acceptance:** Create a custom template, commit it, use it in a Gauntlet run like built-in templates.
+
+---
+
+### 12. Gauntlet polish (C4–C5, E)
+
+- [ ] **Planned**
+
+- Activity filters (builder / critic / tools) where stream allows
+- Pre-run cost banner for Atlas/Seedance templates
+- Post-run Changes tab emphasis; export includes structured verdict summary
+
+---
+
+### Suggested v0.5 PR sequence
+
+1. Gauntlet-only + structured board + phase timeline (**v0.5.0**)
+2. Router + `/quality-bars` read-only list
+3. Quality Bar Studio CRUD → `custom/`
+4. C4/C5 polish
+
 ## Looking ahead
 
-v0.2–v0.4 themes are complete. Future work (v0.5+) is not scoped yet — see [Non-goals](#non-goals) for what we are not building. Open a GitHub issue to propose the next theme.
+v0.2–v0.4 themes are complete. **v0.5** focuses on Gauntlet-first UX and the Quality Bar Studio. Multi-provider remains parked.
 
 ## Versioning
 
