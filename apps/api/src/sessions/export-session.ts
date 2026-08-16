@@ -47,7 +47,7 @@ export function buildSessionExportMarkdown(
     `- **Title:** ${session.title}`,
     `- **Workspace:** \`${session.cwd}\``,
     `- **Model:** ${session.model}`,
-    `- **Mode:** ${session.mode ?? "normal"}`,
+    `- **Mode:** gauntlet`,
     `- **Status:** ${session.status}`,
     `- **Integrations:** ${formatIntegrations(session)}`,
     `- **Created:** ${session.createdAt}`,
@@ -55,7 +55,7 @@ export function buildSessionExportMarkdown(
     "",
   ];
 
-  if (session.mode === "gauntlet" && session.gauntlet) {
+  if (session.gauntlet) {
     lines.push(
       "## Gauntlet",
       "",

@@ -1,6 +1,6 @@
 export type SessionStatus = "idle" | "running" | "error" | "done";
 
-export type SessionMode = "normal" | "gauntlet";
+export type SessionMode = "gauntlet";
 
 export type IntegrationId = "github" | "atlascloud" | "replicate";
 
@@ -75,8 +75,7 @@ export interface WorkspacePreset {
 export interface CreateSessionRequest {
   cwd: string;
   model?: string;
-  mode?: SessionMode;
-  gauntlet?: GauntletConfig;
+  gauntlet: GauntletConfig;
   integrations?: IntegrationId[];
   checkpointBeforeRun?: boolean;
 }
@@ -98,7 +97,6 @@ export interface CreateSessionResponse {
 
 export interface SendMessageRequest {
   prompt: string;
-  mode?: SessionMode;
   gauntlet?: GauntletConfig;
   integrations?: IntegrationId[];
   checkpointBeforeRun?: boolean;
@@ -170,6 +168,13 @@ export type AgentStreamEvent =
   | { type: "gauntlet_phase"; phase: GauntletPhase; detail?: string }
   | { type: "run_baseline"; ref: string }
   | { type: "checkpoint_created"; checkpoint: SessionCheckpoint };
+
+export {
+  GAUNTLET_BAR_STATUS_LABELS,
+  parseGauntletProgress,
+  type GauntletBarStatus,
+  type GauntletProgressStructured,
+} from "./gauntlet-progress-parse.js";
 
 export {
   QUALITY_BAR_CATEGORY_LABELS,

@@ -61,16 +61,16 @@ Layout: **sidebar** (workspace + sessions) · **center** (chat) · **right** (**
 
 1. Under **Folder (absolute path)**, type an absolute folder path (e.g. `/Users/you/my-project`).
 2. Set **Model** if needed (default `composer-2.5`).
-3. Under **Mode**, pick **Normal** or **Gauntlet**. For Gauntlet, fill **Quality bar** — click **Use example** to pre-fill.
+3. Pick a **Template** or write a **Quality bar** — click **Use example** to pre-fill.
 4. Optionally enable **Integrations** (GitHub, Atlas Cloud, Replicate) — each needs its env key in `.env` (badge shows **ready** or **needs …**).
 5. Click **New session** → the **composer** appears at the bottom of the center column.
-6. Write your goal, then **Start** (Normal) or **Start Gauntlet** (or ⌘/Ctrl+Enter).
+6. Write your goal, then **Start Gauntlet** (or ⌘/Ctrl+Enter).
 
 > Before step 5 the center panel is an empty state — no goal input until you create a session.
 
 ### During a session
 
-Follow-up messages in the composer · **Stop** cancels an active stream · Gauntlet: edit **Quality bar** / **Boundary (optional)** before each send · toggle **Integrations** before create or on later sends (MCP config is re-applied each turn).
+Follow-up messages in the composer · **Stop** cancels an active stream · edit **Quality bar** / **Boundary (optional)** before each send · toggle **Integrations** before create or on later sends (MCP config is re-applied each turn).
 
 ### Resume
 
@@ -78,9 +78,9 @@ Reload → select session in sidebar → send a new message. After an API restar
 
 Session files: `.open-loop/sessions/` (gitignored). Gauntlet may write `.open-loop/gauntlet-progress.md` in the workspace.
 
-## Gauntlet mode
+## Gauntlet loop
 
-Builder vs harsh critic loop ([Gauntlet Loop](https://somethingbig.ai/gauntlet-loop)). Requires a **concrete quality bar**. The lead agent decomposes work, fans out builder/critic subagents, and loops until the bar is met. See [Usage](#usage) for UI steps.
+Builder vs harsh critic loop ([Gauntlet Loop](https://somethingbig.ai/gauntlet-loop)). Every session requires a **concrete quality bar**. The lead agent decomposes work, fans out builder/critic subagents, and loops until the bar is met. The **Gauntlet** panel shows phase timeline, bar status, and structured progress. See [Usage](#usage) for UI steps.
 
 ## Integrations
 

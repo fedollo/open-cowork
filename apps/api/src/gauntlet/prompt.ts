@@ -33,7 +33,9 @@ export function buildGauntletPrompt(input: BuildGauntletPromptInput): string {
     "4. Never let the builder grade its own work. Critics must inspect the REAL artifacts (files, test output, screenshots if available) — not the builder's summary.",
     "5. Critics compare our output directly against the quality bar, using a blind A/B comparison when possible. If ours loses, name the largest meaningful gap and send it back for another round.",
     "6. Keep looping. Do not stop after a fixed number of rounds. Continue until our output wins against the bar, or the human stops the run.",
-    "7. Maintain a live progress file at `.open-loop/gauntlet-progress.md` in the workspace root. Update it as work evolves (pieces, critic verdicts, gaps, next steps).",
+    "7. Maintain a live progress file at `.open-loop/gauntlet-progress.md` in the workspace root. Update it as work evolves.",
+    "   Use these ## headings when possible: **Pieces**, **Critic verdicts**, **Gaps**, **Next steps**, **Rounds**.",
+    "   End the file with a line `Bar status: met`, `Bar status: not met`, or `Bar status: in progress`.",
     "8. Use subagents heavily. Prefer parallel builders when pieces are independent.",
   ];
 

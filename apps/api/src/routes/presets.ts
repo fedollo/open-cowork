@@ -15,8 +15,7 @@ const createSchema = z.object({
   name: z.string().min(1),
   cwd: z.string().min(1),
   model: z.string().min(1),
-  mode: z.enum(["normal", "gauntlet"]),
-  gauntlet: gauntletSchema.optional(),
+  gauntlet: gauntletSchema,
   integrations: z
     .array(z.enum(["github", "atlascloud", "replicate"]))
     .optional(),
@@ -37,11 +36,8 @@ presetsRoutes.post("/", async (c) => {
     return c.json({ error: "Invalid body" }, 400);
   }
 
-  if (body.mode === "gauntlet" && !body.gauntlet?.qualityBar?.trim()) {
-    return c.json(
-      { error: "Gauntlet presets require gauntlet.qualityBar" },
-      400,
-    );
+  if (!body.gauntlet?.qualityBar?.trim()) {
+    return c.json({ error: "Presets require gauntlet.qualityBar" }, 400);
   }
 
   try {
@@ -49,14 +45,11 @@ presetsRoutes.post("/", async (c) => {
       name: body.name.trim(),
       cwd: body.cwd.trim(),
       model: body.model.trim(),
-      mode: body.mode,
-      gauntlet:
-        body.mode === "gauntlet" && body.gauntlet
-          ? {
-              qualityBar: body.gauntlet.qualityBar.trim(),
-              boundary: body.gauntlet.boundary?.trim() || undefined,
-            }
-          : undefined,
+      mode: "gauntlet",
+      gauntlet: {
+        qualityBar: body.gauntlet.qualityBar.trim(),
+        boundary: body.gauntlet.boundary?.trim() || undefined,
+      },
       integrations: body.integrations ?? [],
     });
     return c.json(preset, 201);

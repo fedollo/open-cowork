@@ -4,7 +4,6 @@ import { nanoid } from "nanoid";
 import type {
   Session,
   AgentStreamEvent,
-  SessionMode,
   IntegrationId,
   SessionCheckpoint,
 } from "@open-loop/shared";
@@ -56,15 +55,13 @@ const integrationsSchema = z
 const createSchema = z.object({
   cwd: z.string().min(1),
   model: z.string().min(1).optional(),
-  mode: z.enum(["normal", "gauntlet"]).optional(),
-  gauntlet: gauntletSchema.optional(),
+  gauntlet: gauntletSchema,
   integrations: integrationsSchema,
   checkpointBeforeRun: z.boolean().optional(),
 });
 
 const messageSchema = z.object({
   prompt: z.string().min(1),
-  mode: z.enum(["normal", "gauntlet"]).optional(),
   gauntlet: gauntletSchema.optional(),
   integrations: integrationsSchema,
   checkpointBeforeRun: z.boolean().optional(),
@@ -73,7 +70,7 @@ const messageSchema = z.object({
 function normalizeSession(session: Session): Session {
   return {
     ...session,
-    mode: session.mode ?? "normal",
+    mode: "gauntlet",
     integrations: session.integrations ?? [],
     checkpointBeforeRun: session.checkpointBeforeRun ?? false,
     checkpoints: session.checkpoints ?? [],
@@ -135,12 +132,8 @@ sessionsRoutes.post("/", async (c) => {
     return c.json({ error: "Invalid body" }, 400);
   }
 
-  const mode: SessionMode = body.mode ?? "normal";
-  if (mode === "gauntlet" && !body.gauntlet?.qualityBar?.trim()) {
-    return c.json(
-      { error: "Gauntlet mode requires gauntlet.qualityBar" },
-      400,
-    );
+  if (!body.gauntlet?.qualityBar?.trim()) {
+    return c.json({ error: "Quality bar is required" }, 400);
   }
 
   const integrations = normalizeIntegrationIds(body.integrations);
@@ -171,18 +164,15 @@ sessionsRoutes.post("/", async (c) => {
       agentId,
       cwd: body.cwd,
       model,
-      title: mode === "gauntlet" ? "Gauntlet session" : "New session",
+      title: "Gauntlet session",
       createdAt: now,
       updatedAt: now,
       status: "idle",
-      mode,
-      gauntlet:
-        mode === "gauntlet" && body.gauntlet
-          ? {
-              qualityBar: body.gauntlet.qualityBar.trim(),
-              boundary: body.gauntlet.boundary?.trim() || undefined,
-            }
-          : undefined,
+      mode: "gauntlet",
+      gauntlet: {
+        qualityBar: body.gauntlet.qualityBar.trim(),
+        boundary: body.gauntlet.boundary?.trim() || undefined,
+      },
       integrations,
       checkpointBeforeRun: body.checkpointBeforeRun ?? false,
       checkpoints: [],
@@ -229,7 +219,6 @@ sessionsRoutes.post("/:id/messages", async (c) => {
     return c.json({ error: "Invalid body: prompt required" }, 400);
   }
 
-  const mode: SessionMode = body.mode ?? session.mode ?? "normal";
   const gauntletCfg = body.gauntlet ?? session.gauntlet;
   const integrations: IntegrationId[] =
     body.integrations !== undefined
@@ -238,11 +227,8 @@ sessionsRoutes.post("/:id/messages", async (c) => {
   const checkpointBeforeRun =
     body.checkpointBeforeRun ?? session.checkpointBeforeRun ?? false;
 
-  if (mode === "gauntlet" && !gauntletCfg?.qualityBar?.trim()) {
-    return c.json(
-      { error: "Gauntlet mode requires gauntlet.qualityBar" },
-      400,
-    );
+  if (!gauntletCfg?.qualityBar?.trim()) {
+    return c.json({ error: "Quality bar is required" }, 400);
   }
 
   let mcpServers;
@@ -257,15 +243,12 @@ sessionsRoutes.post("/:id/messages", async (c) => {
 
   const userGoal = body.prompt.trim();
   const videoDirectMode = isDirectVideoGoal(userGoal);
-  const agentPrompt =
-    mode === "gauntlet" && gauntletCfg
-      ? buildGauntletPrompt({
-          goal: userGoal,
-          qualityBar: gauntletCfg.qualityBar,
-          boundary: gauntletCfg.boundary,
-          videoDirectMode,
-        })
-      : userGoal;
+  const agentPrompt = buildGauntletPrompt({
+    goal: userGoal,
+    qualityBar: gauntletCfg.qualityBar,
+    boundary: gauntletCfg.boundary,
+    videoDirectMode,
+  });
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
@@ -279,13 +262,11 @@ sessionsRoutes.post("/:id/messages", async (c) => {
 
       try {
         send({ type: "status", status: "running" });
-        if (mode === "gauntlet") {
-          send({
-            type: "gauntlet_phase",
-            phase: "lead",
-            detail: "Gauntlet orchestration prompt sent to lead agent",
-          });
-        }
+        send({
+          type: "gauntlet_phase",
+          phase: "lead",
+          detail: "Gauntlet orchestration prompt sent to lead agent",
+        });
 
         const runBaseline = await getGitHeadRef(session.cwd);
         if (runBaseline) {
@@ -367,23 +348,16 @@ sessionsRoutes.post("/:id/messages", async (c) => {
           session.agentId = agentId;
         }
 
-        session.mode = mode;
+        session.mode = "gauntlet";
         session.integrations = integrations;
-        if (mode === "gauntlet" && gauntletCfg) {
-          session.gauntlet = {
-            qualityBar: gauntletCfg.qualityBar.trim(),
-            boundary: gauntletCfg.boundary?.trim() || undefined,
-          };
-        }
+        session.gauntlet = {
+          qualityBar: gauntletCfg.qualityBar.trim(),
+          boundary: gauntletCfg.boundary?.trim() || undefined,
+        };
 
-        const displayContent =
-          mode === "gauntlet"
-            ? `[Gauntlet]\nGoal: ${userGoal}\nBar: ${gauntletCfg!.qualityBar}${
-                gauntletCfg!.boundary
-                  ? `\nBoundary: ${gauntletCfg!.boundary}`
-                  : ""
-              }`
-            : userGoal;
+        const displayContent = `[Gauntlet]\nGoal: ${userGoal}\nBar: ${gauntletCfg.qualityBar}${
+          gauntletCfg.boundary ? `\nBoundary: ${gauntletCfg.boundary}` : ""
+        }`;
 
         session.messages.push({
           id: nanoid(8),
@@ -392,13 +366,11 @@ sessionsRoutes.post("/:id/messages", async (c) => {
           createdAt: new Date().toISOString(),
         });
 
-        if (
-          session.title === "New session" ||
-          session.title === "Gauntlet session"
-        ) {
-          const prefix = mode === "gauntlet" ? "Gauntlet: " : "";
+        if (session.title === "Gauntlet session") {
           session.title =
-            prefix + userGoal.slice(0, 50) + (userGoal.length > 50 ? "…" : "");
+            "Gauntlet: " +
+            userGoal.slice(0, 50) +
+            (userGoal.length > 50 ? "…" : "");
         }
         session.status = "running";
         session.updatedAt = new Date().toISOString();
@@ -429,15 +401,13 @@ sessionsRoutes.post("/:id/messages", async (c) => {
           for (const m of mapped) {
             if (m.type === "assistant_text") {
               assistantText += m.text;
-              if (mode === "gauntlet") {
-                const phase = detectGauntletPhase(m.text);
-                if (phase && phase.phase !== lastPhase) {
-                  lastPhase = phase.phase;
-                  send(phase);
-                }
+              const phase = detectGauntletPhase(m.text);
+              if (phase && phase.phase !== lastPhase) {
+                lastPhase = phase.phase;
+                send(phase);
               }
             }
-            if (mode === "gauntlet" && m.type === "tool_call") {
+            if (m.type === "tool_call") {
               const phase = detectGauntletPhase(
                 `${m.name} ${m.path ?? ""} ${JSON.stringify(m.args ?? "")}`,
               );
