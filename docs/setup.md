@@ -121,3 +121,14 @@ The web UI **Browse** button calls `POST /api/fs/pick`, which opens a native fol
 | Windows | PowerShell + .NET (`FolderBrowserDialog`) |
 
 Recent folders are stored in `.open-loop/recents.json` (max 10) and updated when you pick a folder or create a session.
+
+## Seedance 2.5 video (Atlas Cloud)
+
+Gauntlet **Video** templates generate MP4s via Atlas MCP (`atlas_generate_video`). Requires `ATLASCLOUD_API_KEY` and the **Atlas** integration toggle.
+
+- Output directory: `assets/videos/`
+- Run log: [docs/video-generation-log.md](video-generation-log.md)
+- Pricing: ~**$0.134 per second** on Atlas Cloud (estimate before long runs)
+
+Models used by templates: `bytedance/seedance-2.5/text-to-video`, `image-to-video`, `reference-to-video`.
+
