@@ -12,33 +12,33 @@ Complete the loop:
 
 The MVP proves the core session + stream experience. Post-MVP work focuses on **review**, **comfort**, and **safety** — not dashboards, cloud hosting, or auth.
 
-## Current state (v0.1)
+## Current state (v0.4)
 
 What works today:
 
-- **3-column UI**: sidebar (workspace + sessions) · center (chat) · right (file tree + activity)
+- **3-column UI**: sidebar (workspace + sessions) · center (chat) · right (File · Activity · Changes · Gauntlet · Context)
 - **Normal mode**: multi-turn chat with Cursor Agent SDK (`local: { cwd }`)
-- **Gauntlet mode**: builder vs harsh critic loop with quality bar and optional boundary
+- **Gauntlet mode**: builder vs harsh critic loop with quality bar, template library (incl. Seedance video), and live progress board
+- **Review**: Changes tab (git diff), session export (markdown), Gauntlet live board
+- **Comfort**: native folder picker, recent folders, workspace presets
+- **Safety**: optional checkpoint before each run + rollback; rules & context inspector
 - **Integrations**: optional MCP toggles (GitHub, Atlas Cloud, Replicate)
 - **Session persistence**: `.open-loop/sessions/` on disk; resume after reload
-- **Checkpoints & rollback** (v0.4): optional git stash / filesystem snapshot before each run
-- **Live stream**: SSE events for assistant text, tool calls, Gauntlet phases
+- **Live stream**: SSE events for assistant text, tool calls, Gauntlet phases, checkpoints
 
-Known MVP limits:
+Known limits:
 
-- Folder path must be typed manually (absolute path, no picker)
-- Session diff & review tab (Changes) — v0.2
-- Session export (markdown download) — v0.2
-- Gauntlet progress file exists on disk but is not shown in the UI
+- Checkpoints are opt-in (toggle off by default); rollback needs a checkpoint from the prior turn
 - Local agents only; no multi-tenant or user auth
+- Web-first — no Electron packaging
 
 ## Release overview
 
 | Release | Theme | Features | Status |
 |---------|-------|----------|--------|
-| **v0.2** | Review | Session diff, Gauntlet live board, session export | Planned |
-| **v0.3** | Comfort | Folder picker, workspace presets, quality bar library | Planned |
-| **v0.4** | Safety | Checkpoints & rollback, rules & context inspector | In progress |
+| **v0.2** | Review | Session diff, Gauntlet live board, session export | Shipped |
+| **v0.3** | Comfort | Folder picker, workspace presets, quality bar library | Shipped |
+| **v0.4** | Safety | Checkpoints & rollback, rules & context inspector | Shipped |
 
 Dates are indicative — this is an OSS project with no fixed deadlines. Features may ship incrementally (e.g. 0.2.0, 0.2.1).
 
@@ -326,8 +326,12 @@ These are intentionally **out of scope** for this roadmap (may be reconsidered l
 - **Multi-tenant auth** — user accounts, teams, hosted instances
 - **Plugin marketplace** — third-party extension store
 
+## Looking ahead
+
+v0.2–v0.4 themes are complete. Future work (v0.5+) is not scoped yet — see [Non-goals](#non-goals) for what we are not building. Open a GitHub issue to propose the next theme.
+
 ## Versioning
 
-- Current version: see root `package.json` (`0.1.0` at MVP).
-- Tag releases on GitHub when a release theme is substantially complete.
+- Current version: see root `package.json` (`0.4.0` — Safety release).
+- Tag releases on GitHub when a release theme is substantially complete (`v0.4.0` = checkpoints, context inspector, and cumulative v0.2–v0.3 features).
 - Minor bumps for individual features within a theme are fine (e.g. 0.2.0 = Gauntlet board, 0.2.1 = export, 0.2.2 = diff).
