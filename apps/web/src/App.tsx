@@ -395,7 +395,9 @@ export function App() {
         setQualityBar(s.gauntlet?.qualityBar ?? "");
         setBoundary(s.gauntlet?.boundary ?? "");
         setEnabledIntegrations(s.integrations ?? []);
-        setCheckpointBeforeRun(s.checkpointBeforeRun ?? false);
+        if (s.checkpointBeforeRun) {
+          setCheckpointBeforeRun(true);
+        }
         void loadTree(s.cwd);
         if (s.mode === "gauntlet") {
           void loadGauntletProgress(s.cwd);
@@ -471,6 +473,7 @@ export function App() {
               }
             : undefined,
         integrations: enabledIntegrations,
+        checkpointBeforeRun,
       });
       await refreshSessions();
       await selectSession(created.id);
@@ -1113,13 +1116,28 @@ export function App() {
                 {session.cwd}
               </span>
               <div className="header-pills">
+                {(session.checkpoints?.length ?? 0) > 0 && (
+                  <span className="status-pill checkpoint">
+                    checkpoint · turn{" "}
+                    {session.checkpoints![session.checkpoints!.length - 1]!.turn}
+                  </span>
+                )}
                 <button
                   type="button"
-                  className="btn btn-ghost header-export"
+                  className={`btn btn-ghost header-export${
+                    (session.checkpoints?.length ?? 0) > 0
+                      ? " rollback-ready"
+                      : ""
+                  }`}
                   disabled={
                     rollingBack ||
                     sending ||
                     !(session.checkpoints?.length ?? 0)
+                  }
+                  title={
+                    (session.checkpoints?.length ?? 0) > 0
+                      ? "Restore files to the state before the last checkpointed run"
+                      : "No checkpoint yet — enable “Create checkpoint before run”, then Start"
                   }
                   onClick={() => void handleRollback()}
                 >

@@ -1019,3 +1019,18 @@ button {
 .checkpoint-hint {
   margin: 0 0 0.75rem;
 }
+
+.header-export.rollback-ready {
+  color: var(--accent, #3d9a6a);
+  border-color: var(--accent, #3d9a6a);
+}
+
+.status-pill.checkpoint {
+  border-color: var(--accent, #3d9a6a);
+  color: var(--accent, #3d9a6a);
+}
+
+.header-export:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
