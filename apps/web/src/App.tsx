@@ -34,6 +34,7 @@ import {
   savePreset,
   deletePreset,
   exportSession,
+  rollbackSession,
   streamMessage,
 } from "./api";
 import { GAUNTLET_EXAMPLE } from "./examples";
@@ -114,6 +115,8 @@ export function App() {
     WorkspaceContextEntry[]
   >([]);
   const [contextLoading, setContextLoading] = useState(false);
+  const [checkpointBeforeRun, setCheckpointBeforeRun] = useState(false);
+  const [rollingBack, setRollingBack] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -392,6 +395,7 @@ export function App() {
         setQualityBar(s.gauntlet?.qualityBar ?? "");
         setBoundary(s.gauntlet?.boundary ?? "");
         setEnabledIntegrations(s.integrations ?? []);
+        setCheckpointBeforeRun(s.checkpointBeforeRun ?? false);
         void loadTree(s.cwd);
         if (s.mode === "gauntlet") {
           void loadGauntletProgress(s.cwd);
@@ -415,6 +419,32 @@ export function App() {
   };
 
   const fillGauntletExample = () => applyQualityBarTemplate("readme-docs");
+
+  const handleRollback = async () => {
+    if (!activeId || !session || rollingBack || sending) return;
+    setRollingBack(true);
+    setError(null);
+    try {
+      const result = await rollbackSession(activeId);
+      const refreshed = await getSession(activeId);
+      setSession(refreshed);
+      setCheckpointBeforeRun(refreshed.checkpointBeforeRun ?? false);
+      void loadTree(refreshed.cwd);
+      void loadChanges(refreshed.cwd, runBaselineRef.current);
+      setActivity((prev) => [
+        ...prev,
+        {
+          id: `${Date.now()}-${prev.length}`,
+          kind: "checkpoint",
+          text: `Rolled back turn ${result.rolledBack.turn}`,
+        },
+      ]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Rollback failed");
+    } finally {
+      setRollingBack(false);
+    }
+  };
 
   const handleCreate = async () => {
     const cwd = cwdInput.trim();
@@ -515,6 +545,24 @@ export function App() {
       case "run_baseline":
         runBaselineRef.current = event.ref;
         setRunBaseline(event.ref);
+        break;
+      case "checkpoint_created":
+        setSession((prev) =>
+          prev
+            ? {
+                ...prev,
+                checkpoints: [...(prev.checkpoints ?? []), event.checkpoint],
+              }
+            : prev,
+        );
+        setActivity((prev) => [
+          ...prev,
+          {
+            id: `${Date.now()}-${prev.length}`,
+            kind: "checkpoint",
+            text: `Checkpoint turn ${event.checkpoint.turn} (${event.checkpoint.kind})`,
+          },
+        ]);
         break;
       case "error":
         setError(
@@ -620,6 +668,7 @@ export function App() {
                 }
               : undefined,
           integrations: enabledIntegrations,
+          checkpointBeforeRun,
         },
         (event) =>
           handleEvent(event, { cwd: runCwd, isGauntlet: isGauntletRun }),
@@ -952,6 +1001,20 @@ export function App() {
             <p className="hint-muted">Loading integrations…</p>
           )}
 
+          <label className="checkpoint-toggle">
+            <input
+              type="checkbox"
+              checked={checkpointBeforeRun}
+              onChange={(e) => setCheckpointBeforeRun(e.target.checked)}
+              disabled={sending}
+            />
+            <span>Create checkpoint before run</span>
+          </label>
+          <p className="hint-muted checkpoint-hint">
+            Git stash (or filesystem snapshot when not a repo). Use Rollback in
+            the session header after a run.
+          </p>
+
           <label htmlFor="sidebar-goal">Goal</label>
           <textarea
             id="sidebar-goal"
@@ -1050,6 +1113,18 @@ export function App() {
                 {session.cwd}
               </span>
               <div className="header-pills">
+                <button
+                  type="button"
+                  className="btn btn-ghost header-export"
+                  disabled={
+                    rollingBack ||
+                    sending ||
+                    !(session.checkpoints?.length ?? 0)
+                  }
+                  onClick={() => void handleRollback()}
+                >
+                  {rollingBack ? "Rolling back…" : "Rollback last turn"}
+                </button>
                 <button
                   type="button"
                   className="btn btn-ghost header-export"

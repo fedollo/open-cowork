@@ -132,3 +132,24 @@ Gauntlet **Video** templates generate MP4s via Atlas MCP (`atlas_generate_video`
 
 Models used by templates: `bytedance/seedance-2.5/text-to-video`, `image-to-video`, `reference-to-video`.
 
+## Checkpoints & rollback (v0.4)
+
+Optional safety before each agent run:
+
+1. Enable **Create checkpoint before run** in the sidebar (off by default).
+2. Run the agent as usual.
+3. If you dislike the result, click **Rollback last turn** in the session header.
+
+| Workspace | Strategy |
+|-----------|----------|
+| Git repo | `git stash` of uncommitted changes + `HEAD` ref; rollback resets to that point |
+| Non-git folder | Filesystem snapshot under `.open-loop/checkpoints/<sessionId>/` |
+
+**Limits:**
+
+- Rollback restores the last checkpoint only (one step).
+- Git rollback fails clearly if stash apply conflicts — resolve manually in the repo.
+- Large non-git folders may take time to snapshot (skips `node_modules`, `.git`).
+
+Manual checkpoint: `POST /api/sessions/:id/checkpoint` (also available from the UI toggle on send).
+

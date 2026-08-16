@@ -1002,3 +1002,20 @@ button {
   font-size: 0.8rem;
   margin-bottom: 0.2rem;
 }
+
+.checkpoint-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0.75rem 0 0.25rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.checkpoint-toggle input {
+  margin-top: 0.15rem;
+}
+
+.checkpoint-hint {
+  margin: 0 0 0.75rem;
+}

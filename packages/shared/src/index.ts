@@ -29,7 +29,27 @@ export interface Session {
   mode: SessionMode;
   gauntlet?: GauntletConfig;
   integrations?: IntegrationId[];
+  /** When true, create a checkpoint before each agent run (default false). */
+  checkpointBeforeRun?: boolean;
+  checkpoints?: SessionCheckpoint[];
   messages: ChatMessage[];
+}
+
+export type CheckpointKind = "git_stash" | "filesystem";
+
+export interface SessionCheckpoint {
+  id: string;
+  turn: number;
+  createdAt: string;
+  kind: CheckpointKind;
+  /** Git HEAD at checkpoint time (git_stash). */
+  headRef?: string;
+  /** Git stash object id (git_stash, when tree was dirty). */
+  stashRef?: string;
+  /** Path under .open-loop/checkpoints/ (filesystem). */
+  snapshotDir?: string;
+  /** Relative file paths captured (filesystem). */
+  files?: string[];
 }
 
 export interface ChatMessage {
@@ -79,6 +99,7 @@ export interface SendMessageRequest {
   mode?: SessionMode;
   gauntlet?: GauntletConfig;
   integrations?: IntegrationId[];
+  checkpointBeforeRun?: boolean;
 }
 
 export interface FsTreeNode {
@@ -145,7 +166,8 @@ export type AgentStreamEvent =
     }
   | { type: "done"; runId?: string; status: "finished" | "error" | "cancelled" }
   | { type: "gauntlet_phase"; phase: GauntletPhase; detail?: string }
-  | { type: "run_baseline"; ref: string };
+  | { type: "run_baseline"; ref: string }
+  | { type: "checkpoint_created"; checkpoint: SessionCheckpoint };
 
 export {
   QUALITY_BAR_CATEGORY_LABELS,
