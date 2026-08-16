@@ -1,7 +1,7 @@
 {
   "name": "open-loop",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.4.0",
   "description": "Local agentic workspace UI powered by the Cursor Agent SDK (unofficial)",
   "scripts": {
     "predev": "pnpm --filter @open-loop/shared build",
