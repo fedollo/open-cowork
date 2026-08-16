@@ -1,4 +1,4 @@
-export type QualityBarCategory = "dev" | "visual" | "writing" | "marketing";
+export type QualityBarCategory = "dev" | "visual" | "video" | "writing" | "marketing";
 
 export type QualityBarIntegrationId = "github" | "atlascloud" | "replicate";
 
@@ -15,6 +15,7 @@ export interface QualityBarTemplate {
 /** Display order for template dropdown optgroups. */
 export const QUALITY_BAR_CATEGORY_ORDER: QualityBarCategory[] = [
   "visual",
+  "video",
   "writing",
   "marketing",
   "dev",
@@ -22,6 +23,7 @@ export const QUALITY_BAR_CATEGORY_ORDER: QualityBarCategory[] = [
 
 export const QUALITY_BAR_CATEGORY_LABELS: Record<QualityBarCategory, string> = {
   visual: "Visual",
+  video: "Video (Seedance 2.5)",
   writing: "Writing",
   marketing: "Marketing",
   dev: "Dev",
@@ -111,6 +113,84 @@ export const QUALITY_BAR_TEMPLATES: QualityBarTemplate[] = [
       "Open assets/open-loop-demo-thumbnail.png: title readable at 320px (YouTube-style preview). Visual style matches open-loop-banner.png (dark + #3d9a6a). README or docs/setup.md has one line explaining where to use this thumbnail.",
     boundary:
       "Only assets/, README.md, and docs/setup.md. Use Atlas to generate the image. Do not change apps/, packages/, or API code.",
+  },
+
+  {
+    id: "video-demo-text-to-video",
+    label: "Demo clip 15s (~$2)",
+    category: "video",
+    integrations: ["atlascloud"],
+    goal: "Using Atlas MCP and model bytedance/seedance-2.5/text-to-video, generate a 15-second 16:9 720p clip explaining Open Loop: pick folder → describe goal → agent works → review changes. Dark UI, green accent #3d9a6a. generate_audio: true. Download MP4 to assets/videos/open-loop-demo-15s.mp4.",
+    qualityBar:
+      "assets/videos/open-loop-demo-15s.mp4 plays in QuickTime/VLC; a non-technical viewer understands the product in 15s; no illegible fake UI text; docs/video-generation-log.md has one row with model, duration, ratio, audio=true, est. cost ~$2.01, prediction id.",
+    boundary:
+      "Atlas MCP only. Max 15s. Only assets/videos/, docs/video-generation-log.md, README (one line). No apps/ or packages/ code.",
+  },
+  {
+    id: "video-hero-image-to-video",
+    label: "Banner hero motion 8s (~$1)",
+    category: "video",
+    integrations: ["atlascloud"],
+    goal: "Using Atlas MCP and model bytedance/seedance-2.5/image-to-video, animate assets/open-loop-banner.png with subtle motion (slow pan, soft glow). 8s, 16:9, 720p, generate_audio: false. Save as assets/videos/open-loop-hero-8s.mp4.",
+    qualityBar:
+      "Output matches banner palette (dark + #3d9a6a); smooth loop-friendly motion; no garbled text; log row in docs/video-generation-log.md with est. cost ~$1.07.",
+    boundary:
+      "Input image: assets/open-loop-banner.png only. Max 8s, silent. Only assets/videos/ and docs/video-generation-log.md.",
+  },
+  {
+    id: "video-social-reference-to-video",
+    label: "Social reel 9:16 12s (~$1.60)",
+    category: "video",
+    integrations: ["atlascloud"],
+    goal: "Using Atlas MCP and model bytedance/seedance-2.5/reference-to-video, create a 12s vertical reel (9:16, 720p) for Open Loop using references assets/open-loop-banner.png and assets/open-loop-demo-thumbnail.png. Short hook line with audio. Save as assets/videos/open-loop-reel-9x16-12s.mp4.",
+    qualityBar:
+      "Readable on mobile preview; brand-consistent; references visibly inform style; no real human faces; log documents reference paths and est. cost ~$1.61.",
+    boundary:
+      "References only from assets/. Max 12s. Only assets/videos/, docs/video-generation-log.md. No code changes.",
+  },
+  {
+    id: "video-gauntlet-spotlight",
+    label: "Gauntlet spotlight 12s (~$1.60)",
+    category: "video",
+    integrations: ["atlascloud"],
+    goal: "Using Atlas MCP and model bytedance/seedance-2.5/text-to-video, create a 12s abstract clip of builder vs harsh critic improving work until a quality bar is met (Gauntlet metaphor). 16:9, 720p, generate_audio: true. Save as assets/videos/open-loop-gauntlet-12s.mp4.",
+    qualityBar:
+      "Viewer grasps builder/critic loop without reading code; on-brand dark/green; any on-screen phrase ≤8 words; log row complete.",
+    boundary:
+      "Max 12s. Only assets/videos/, docs/video-generation-log.md. Do not edit gauntlet runtime code.",
+  },
+  {
+    id: "video-release-teaser",
+    label: "Release teaser 8s (~$1)",
+    category: "video",
+    integrations: ["atlascloud"],
+    goal: "Using Atlas MCP and model bytedance/seedance-2.5/text-to-video, create an 8s release teaser for the latest Open Loop theme (update title in prompt, e.g. Open Loop v0.3 — Comfort). In-frame title, 16:9, 720p, generate_audio: true. Save as assets/videos/open-loop-release-teaser-8s.mp4.",
+    qualityBar:
+      "Title readable at 480p; OSS product tone (no empty hype); README or docs links the file; log est. cost ~$1.07.",
+    boundary:
+      "Max 8s. Only assets/videos/, docs/video-generation-log.md, README optional one line.",
+  },
+  {
+    id: "video-ui-broll-silent",
+    label: "Silent UI b-roll 10s (~$1.34)",
+    category: "video",
+    integrations: ["atlascloud"],
+    goal: "Using Atlas MCP and model bytedance/seedance-2.5/text-to-video, create 10s of stylized dark three-column workspace b-roll (sidebar · chat · panel) with NO readable fake text — for external editing. 16:9, 720p, generate_audio: false. Save as assets/videos/open-loop-broll-10s.mp4.",
+    qualityBar:
+      "Palette matches #3d9a6a dark UI; no illegible UI gibberish; silent MP4; log notes audio=false and est. cost ~$1.34.",
+    boundary:
+      "Max 10s. Must be silent (generate_audio: false). Only assets/videos/ and docs/video-generation-log.md.",
+  },
+  {
+    id: "video-extend-reference-to-video",
+    label: "Extend clip +8s (~$1.07)",
+    category: "video",
+    integrations: ["atlascloud"],
+    goal: "Using Atlas MCP and model bytedance/seedance-2.5/reference-to-video, extend an existing MP4 in assets/videos/ (e.g. open-loop-demo-15s.mp4) by ~8s with matching style and a closing CTA \"Try Open Loop locally.\" 16:9, 720p, generate_audio: true. Save as assets/videos/open-loop-demo-extended-23s.mp4.",
+    qualityBar:
+      "Visual continuity with source clip; total duration documented; combined reference video duration ≤30s per API limits; log lists source path + prediction ids; est. cost ~$1.07 for +8s.",
+    boundary:
+      "Reference MP4s only under assets/videos/. Max +8s new footage. Only assets/videos/ and docs/video-generation-log.md.",
   },
   {
     id: "product-one-pager",

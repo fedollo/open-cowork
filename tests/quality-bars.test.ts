@@ -7,8 +7,8 @@ import {
 } from "../packages/shared/src/quality-bars/index.ts";
 
 describe("quality bar templates", () => {
-  it("has 16 templates with unique ids and required fields", () => {
-    assert.equal(QUALITY_BAR_TEMPLATES.length, 16);
+  it("has 23 templates with unique ids and required fields", () => {
+    assert.equal(QUALITY_BAR_TEMPLATES.length, 23);
     const ids = new Set<string>();
     for (const template of QUALITY_BAR_TEMPLATES) {
       assert.ok(template.id.length > 0);
@@ -25,10 +25,20 @@ describe("quality bar templates", () => {
   it("includes visual templates that require Atlas Cloud", () => {
     const atlasVisual = QUALITY_BAR_TEMPLATES.filter(
       (t) =>
-        t.category === "visual" &&
-        t.integrations?.includes("atlascloud"),
+        t.category === "visual" && t.integrations?.includes("atlascloud"),
     );
     assert.equal(atlasVisual.length, 4);
+  });
+
+  it("includes seven Seedance video templates with Atlas Cloud", () => {
+    const video = QUALITY_BAR_TEMPLATES.filter((t) => t.category === "video");
+    assert.equal(video.length, 7);
+    for (const template of video) {
+      assert.deepEqual(template.integrations, ["atlascloud"]);
+      assert.match(template.goal, /seedance-2\.5/i);
+      assert.match(template.boundary ?? "", /assets\/videos/i);
+    }
+    assert.ok(QUALITY_BAR_CATEGORY_ORDER.includes("video"));
   });
 
   it("includes github triage template", () => {

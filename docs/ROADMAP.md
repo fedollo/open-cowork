@@ -214,6 +214,8 @@ Theme: reduce friction for repeat use and Gauntlet setup.
 
 **Expanded (post-v0.3):** 16 templates across **Visual** (Atlas Cloud), **Writing**, **Marketing**, and **Dev** categories, with integration hints in the Gauntlet sidebar. Visual templates require `ATLASCLOUD_API_KEY` — see [setup.md](setup.md).
 
+**Video (Seedance 2.5):** seven Gauntlet templates in category **Video** use `bytedance/seedance-2.5/*` via Atlas MCP; outputs go to `assets/videos/` with runs logged in [video-generation-log.md](video-generation-log.md).
+
 ---
 
 
