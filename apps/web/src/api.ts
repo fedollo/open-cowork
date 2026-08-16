@@ -46,6 +46,7 @@ export async function createSession(opts: {
   mode?: SessionMode;
   gauntlet?: GauntletConfig;
   integrations?: IntegrationId[];
+  checkpointBeforeRun?: boolean;
 }): Promise<CreateSessionResponse> {
   const res = await fetch(`${BASE}/sessions`, {
     method: "POST",

@@ -78,6 +78,7 @@ export interface CreateSessionRequest {
   mode?: SessionMode;
   gauntlet?: GauntletConfig;
   integrations?: IntegrationId[];
+  checkpointBeforeRun?: boolean;
 }
 
 export interface CreateSessionResponse {
@@ -92,6 +93,7 @@ export interface CreateSessionResponse {
   mode: SessionMode;
   gauntlet?: GauntletConfig;
   integrations?: IntegrationId[];
+  checkpointBeforeRun?: boolean;
 }
 
 export interface SendMessageRequest {

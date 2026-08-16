@@ -59,6 +59,7 @@ const createSchema = z.object({
   mode: z.enum(["normal", "gauntlet"]).optional(),
   gauntlet: gauntletSchema.optional(),
   integrations: integrationsSchema,
+  checkpointBeforeRun: z.boolean().optional(),
 });
 
 const messageSchema = z.object({
@@ -183,6 +184,8 @@ sessionsRoutes.post("/", async (c) => {
             }
           : undefined,
       integrations,
+      checkpointBeforeRun: body.checkpointBeforeRun ?? false,
+      checkpoints: [],
       messages: [],
     };
     await saveSession(session);
@@ -200,6 +203,7 @@ sessionsRoutes.post("/", async (c) => {
       mode: session.mode,
       gauntlet: session.gauntlet,
       integrations: session.integrations,
+      checkpointBeforeRun: session.checkpointBeforeRun,
     });
   } catch (err) {
     const message =
