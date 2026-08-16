@@ -8,6 +8,8 @@ export interface BuildGauntletPromptInput {
   goal: string;
   qualityBar: string;
   boundary?: string;
+  /** Atlas/Seedance video jobs: one end-to-end generation before critic loops. */
+  videoDirectMode?: boolean;
 }
 
 export function buildGauntletPrompt(input: BuildGauntletPromptInput): string {
@@ -37,6 +39,15 @@ export function buildGauntletPrompt(input: BuildGauntletPromptInput): string {
 
   if (boundary) {
     lines.push("", "## Boundaries (hard limits)", boundary);
+  }
+
+  if (input.videoDirectMode) {
+    lines.push(
+      "",
+      "## Video generation (Atlas / Seedance)",
+      "These jobs are expensive. Run ONE end-to-end generation (submit → poll → download MP4) before any builder/critic loop.",
+      "Use Task subagents only to QA the downloaded MP4 (palette, motion, readability) — not to fan out parallel video generations.",
+    );
   }
 
   lines.push(

@@ -48,11 +48,18 @@ export function mapSdkEvent(event: SDKMessage): AgentStreamEvent[] {
         CANCELLED: "idle",
         EXPIRED: "error",
       } as const;
+      const mappedStatus = statusMap[event.status] ?? "running";
       out.push({
         type: "status",
-        status: statusMap[event.status] ?? "running",
+        status: mappedStatus,
         message: event.message ?? event.status,
       });
+      if (event.status === "ERROR" || event.status === "EXPIRED") {
+        out.push({
+          type: "error",
+          message: event.message ?? event.status,
+        });
+      }
       break;
     }
     case "thinking":

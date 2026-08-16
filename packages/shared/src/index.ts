@@ -136,7 +136,13 @@ export type AgentStreamEvent =
   | { type: "tool_call"; name: string; path?: string; args?: unknown }
   | { type: "tool_result"; name: string; ok: boolean; summary?: string }
   | { type: "status"; status: SessionStatus; message?: string }
-  | { type: "error"; message: string; retryable?: boolean }
+  | {
+      type: "error";
+      message: string;
+      code?: string;
+      retryable?: boolean;
+      suggestApiRestart?: boolean;
+    }
   | { type: "done"; runId?: string; status: "finished" | "error" | "cancelled" }
   | { type: "gauntlet_phase"; phase: GauntletPhase; detail?: string }
   | { type: "run_baseline"; ref: string };

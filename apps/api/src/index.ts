@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { serve } from "@hono/node-server";
+import { initCursorSdk } from "./sdk-init.js";
 import { env } from "./env.js";
 import { sessionsRoutes } from "./routes/sessions.js";
 import { fsRoutes } from "./routes/fs.js";
@@ -8,6 +9,8 @@ import { workspaceRoutes } from "./routes/workspace.js";
 import { integrationsRoutes } from "./routes/integrations.js";
 import { presetsRoutes } from "./routes/presets.js";
 import { disposeAll } from "./agents/registry.js";
+
+initCursorSdk();
 
 const app = new Hono();
 
