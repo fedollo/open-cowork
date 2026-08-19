@@ -12,13 +12,15 @@ Complete the loop:
 
 The MVP proves the core session + stream experience. Post-MVP work focuses on **review**, **comfort**, and **safety** — not dashboards, cloud hosting, or auth.
 
-## Current state (v0.4)
+## Current state (v0.5)
 
 What works today:
 
+- **Gauntlet-only product**: every session requires a quality bar; builder/critic loop is the default (and only) mode
 - **3-column UI**: sidebar (workspace + sessions) · center (chat) · right (File · Activity · Changes · Gauntlet · Context)
-- **Gauntlet loop**: builder vs harsh critic with quality bar, template library (incl. Seedance video), structured progress board, and live phase timeline
-- **Review**: Changes tab (git diff), session export (markdown), Gauntlet live board
+- **Structured Gauntlet board**: phase timeline, bar status, parsed progress sections (Pieces, Verdicts, Gaps, …)
+- **Quality bar library**: built-in templates (Visual, Video, Writing, Dev) incl. Seedance video via Atlas MCP
+- **Review**: Changes tab (git diff), session export (markdown)
 - **Comfort**: native folder picker, recent folders, workspace presets
 - **Safety**: optional checkpoint before each run + rollback; rules & context inspector
 - **Integrations**: optional MCP toggles (GitHub, Atlas Cloud, Replicate)
@@ -38,7 +40,7 @@ Known limits:
 | **v0.2** | Review | Session diff, Gauntlet live board, session export | Shipped |
 | **v0.3** | Comfort | Folder picker, workspace presets, quality bar library | Shipped |
 | **v0.4** | Safety | Checkpoints & rollback, rules & context inspector | Shipped |
-| **v0.5** | Gauntlet-first | Gauntlet-only, structured board, Quality Bar Studio (planned) | In progress |
+| **v0.5** | Gauntlet-first | Gauntlet-only, structured board (Studio page planned) | Shipped (0.5.0) |
 
 Dates are indicative — this is an OSS project with no fixed deadlines. Features may ship incrementally (e.g. 0.2.0, 0.2.1).
 
@@ -406,6 +408,6 @@ v0.2–v0.4 themes are complete. **v0.5** focuses on Gauntlet-first UX and the Q
 
 ## Versioning
 
-- Current version: see root `package.json` (`0.4.0` — Safety release).
-- Tag releases on GitHub when a release theme is substantially complete (`v0.4.0` = checkpoints, context inspector, and cumulative v0.2–v0.3 features).
+- Current version: see root `package.json` (`0.5.0` — Gauntlet-first release).
+- Tag releases on GitHub when a release theme is substantially complete (`v0.5.0` = Gauntlet-only product + structured board).
 - Minor bumps for individual features within a theme are fine (e.g. 0.2.0 = Gauntlet board, 0.2.1 = export, 0.2.2 = diff).
