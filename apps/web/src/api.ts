@@ -278,3 +278,68 @@ export async function pickFolder(): Promise<FolderPickResponse> {
   }
   return res.json();
 }
+
+export async function listQualityBarTemplates(): Promise<
+  import("@open-loop/shared").QualityBarTemplateRecord[]
+> {
+  const res = await fetch(`${BASE}/quality-bars`);
+  if (!res.ok) throw new Error(await res.text());
+  const body = (await res.json()) as {
+    templates: import("@open-loop/shared").QualityBarTemplateRecord[];
+  };
+  return body.templates;
+}
+
+export async function createQualityBarTemplate(input: {
+  id: string;
+  label: string;
+  category: import("@open-loop/shared").QualityBarCategory;
+  goal: string;
+  qualityBar: string;
+  boundary?: string;
+  integrations?: IntegrationId[];
+}): Promise<import("@open-loop/shared").QualityBarTemplateRecord> {
+  const res = await fetch(`${BASE}/quality-bars`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error((body as { error?: string }).error ?? res.statusText);
+  }
+  return res.json();
+}
+
+export async function updateQualityBarTemplate(
+  id: string,
+  input: {
+    label: string;
+    category: import("@open-loop/shared").QualityBarCategory;
+    goal: string;
+    qualityBar: string;
+    boundary?: string;
+    integrations?: IntegrationId[];
+  },
+): Promise<import("@open-loop/shared").QualityBarTemplateRecord> {
+  const res = await fetch(`${BASE}/quality-bars/${encodeURIComponent(id)}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error((body as { error?: string }).error ?? res.statusText);
+  }
+  return res.json();
+}
+
+export async function deleteQualityBarTemplate(id: string): Promise<void> {
+  const res = await fetch(`${BASE}/quality-bars/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error((body as { error?: string }).error ?? res.statusText);
+  }
+}

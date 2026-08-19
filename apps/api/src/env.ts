@@ -34,6 +34,10 @@ export const env = {
   presetsPath: join(dirname(sessionsDir), "presets.json"),
   recentsPath: join(dirname(sessionsDir), "recents.json"),
   checkpointsDir: join(dirname(sessionsDir), "checkpoints"),
+  qualityBarsCustomDir: resolve(
+    dirname(fileURLToPath(import.meta.url)),
+    "../../../packages/shared/quality-bars/custom",
+  ),
 };
 
 export function requireApiKey(): string {

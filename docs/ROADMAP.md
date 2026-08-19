@@ -19,7 +19,7 @@ What works today:
 - **Gauntlet-only product**: every session requires a quality bar; builder/critic loop is the default (and only) mode
 - **3-column UI**: sidebar (workspace + sessions) · center (chat) · right (File · Activity · Changes · Gauntlet · Context)
 - **Structured Gauntlet board**: phase timeline, bar status, parsed progress sections (Pieces, Verdicts, Gaps, …)
-- **Quality bar library**: built-in templates (Visual, Video, Writing, Dev) incl. Seedance video via Atlas MCP
+- **Quality Bar Studio**: `/quality-bars` page — browse built-in templates, create/edit custom bars in `packages/shared/quality-bars/custom/`
 - **Review**: Changes tab (git diff), session export (markdown)
 - **Comfort**: native folder picker, recent folders, workspace presets
 - **Safety**: optional checkpoint before each run + rollback; rules & context inspector
@@ -375,7 +375,7 @@ Theme: **Open Loop is a Gauntlet studio** — quality bar, builder/critic loop, 
 
 ### 11. Quality Bar Studio (page)
 
-- [ ] **Planned** (v0.5.1+)
+- [x] **Shipped** (v0.5.1)
 
 **Problem:** Templates live only in `packages/shared` via PR; no UI to create custom bars.
 

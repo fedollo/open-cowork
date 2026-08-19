@@ -184,7 +184,9 @@ export {
   listQualityBarTemplatesByCategory,
   type QualityBarCategory,
   type QualityBarIntegrationId,
+  type QualityBarSource,
   type QualityBarTemplate,
+  type QualityBarTemplateRecord,
 } from "./quality-bars/index.js";
 
 export interface FolderPickResponse {
