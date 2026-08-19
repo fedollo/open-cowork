@@ -7,6 +7,7 @@ import type {
   GauntletPhase,
   IntegrationId,
   IntegrationInfo,
+  QualityBarTemplateRecord,
   Session,
   SessionStatus,
   WorkspaceContextEntry,
@@ -15,8 +16,6 @@ import type {
 import {
   QUALITY_BAR_CATEGORY_LABELS,
   QUALITY_BAR_CATEGORY_ORDER,
-  getQualityBarTemplate,
-  listQualityBarTemplatesByCategory,
 } from "@open-loop/shared";
 import {
   cancelSession,
@@ -29,6 +28,7 @@ import {
   fetchWorkspaceDiff,
   getSession,
   listIntegrations,
+  listQualityBarTemplates,
   listSessions,
   listPresets,
   savePreset,
@@ -113,6 +113,9 @@ export function App() {
   const [contextLoading, setContextLoading] = useState(false);
   const [checkpointBeforeRun, setCheckpointBeforeRun] = useState(false);
   const [rollingBack, setRollingBack] = useState(false);
+  const [qualityBarTemplates, setQualityBarTemplates] = useState<
+    QualityBarTemplateRecord[]
+  >([]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -172,6 +175,31 @@ export function App() {
       console.error(err);
     }
   }, []);
+
+  const refreshQualityBarTemplates = useCallback(async () => {
+    try {
+      const list = await listQualityBarTemplates();
+      setQualityBarTemplates(list);
+      return list;
+    } catch (err) {
+      console.error(err);
+      return [] as QualityBarTemplateRecord[];
+    }
+  }, []);
+
+  const applyQualityBarTemplate = useCallback(
+    (id: string, source?: QualityBarTemplateRecord[]) => {
+      const list = source ?? qualityBarTemplates;
+      const template = list.find((t) => t.id === id);
+      if (!template) return;
+      setPrompt(template.goal);
+      setQualityBar(template.qualityBar);
+      setBoundary(template.boundary ?? "");
+      setSelectedTemplateId(id);
+      setError(null);
+    },
+    [qualityBarTemplates],
+  );
 
   const applyWorkspacePreset = (preset: WorkspacePreset) => {
     setCwdInput(preset.cwd);
@@ -250,7 +278,25 @@ export function App() {
     void refreshIntegrations();
     void refreshPresets();
     void refreshRecents();
-  }, [refreshSessions, refreshIntegrations, refreshPresets, refreshRecents]);
+    void refreshQualityBarTemplates().then((list) => {
+      const params = new URLSearchParams(window.location.search);
+      const templateId = params.get("template");
+      if (templateId && list) {
+        applyQualityBarTemplate(templateId, list);
+        params.delete("template");
+        const qs = params.toString();
+        const next = `${window.location.pathname}${qs ? `?${qs}` : ""}`;
+        window.history.replaceState({}, "", next);
+      }
+    });
+  }, [
+    refreshSessions,
+    refreshIntegrations,
+    refreshPresets,
+    refreshRecents,
+    refreshQualityBarTemplates,
+    applyQualityBarTemplate,
+  ]);
 
   const toggleIntegration = (id: IntegrationId) => {
     setEnabledIntegrations((prev) =>
@@ -396,16 +442,6 @@ export function App() {
     },
     [loadTree, loadGauntletProgress],
   );
-
-  const applyQualityBarTemplate = (id: string) => {
-    const template = getQualityBarTemplate(id);
-    if (!template) return;
-    setPrompt(template.goal);
-    setQualityBar(template.qualityBar);
-    setBoundary(template.boundary ?? "");
-    setSelectedTemplateId(id);
-    setError(null);
-  };
 
   const fillGauntletExample = () => applyQualityBarTemplate("readme-docs");
 
@@ -687,6 +723,9 @@ export function App() {
         <div className="brand">
           <h1>Open Loop</h1>
           <p>Gauntlet workspace</p>
+          <a className="brand-link" href="/quality-bars">
+            Quality bars →
+          </a>
         </div>
 
         <div className="new-session">
@@ -864,16 +903,21 @@ export function App() {
                     key={category}
                     label={QUALITY_BAR_CATEGORY_LABELS[category]}
                   >
-                    {listQualityBarTemplatesByCategory(category).map((t) => (
+                    {qualityBarTemplates
+                      .filter((t) => t.category === category)
+                      .map((t) => (
                       <option key={t.id} value={t.id}>
                         {t.label}
+                        {t.source === "custom" ? " ★" : ""}
                       </option>
                     ))}
                   </optgroup>
                 ))}
               </select>
               {selectedTemplateId && (() => {
-                const template = getQualityBarTemplate(selectedTemplateId);
+                const template = qualityBarTemplates.find(
+                  (t) => t.id === selectedTemplateId,
+                );
                 if (!template?.integrations?.length) return null;
                 const parts = template.integrations.map((id) => {
                   const info = integrationCatalog.find((i) => i.id === id);

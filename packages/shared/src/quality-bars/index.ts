@@ -12,6 +12,13 @@ export interface QualityBarTemplate {
   integrations?: QualityBarIntegrationId[];
 }
 
+export type QualityBarSource = "builtin" | "custom";
+
+/** Template with origin — built-in (shared package) or user file in quality-bars/custom/. */
+export interface QualityBarTemplateRecord extends QualityBarTemplate {
+  source: QualityBarSource;
+}
+
 /** Display order for template dropdown optgroups. */
 export const QUALITY_BAR_CATEGORY_ORDER: QualityBarCategory[] = [
   "visual",
