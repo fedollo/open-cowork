@@ -1,9 +1,10 @@
-import { Agent, CursorAgentError, type McpServerConfig } from "@cursor/sdk";
-import { env, requireApiKey } from "../env.js";
-import { resolveSettingSources } from "./setting-sources.js";
+import { CursorAgentError, type McpServerConfig } from "@cursor/sdk";
+import { resolveAtlasChatModel } from "@open-loop/shared";
+import { requireApiKey } from "../env.js";
+import { AtlasAgent, type AtlasRun } from "./atlas-agent.js";
 
-type AgentInstance = Awaited<ReturnType<typeof Agent.create>>;
-type RunInstance = Awaited<ReturnType<AgentInstance["send"]>>;
+type AgentInstance = AtlasAgent;
+type RunInstance = AtlasRun;
 
 interface RegistryEntry {
   agent: AgentInstance;
@@ -12,39 +13,28 @@ interface RegistryEntry {
 
 const registry = new Map<string, RegistryEntry>();
 
-function settingSources() {
-  return resolveSettingSources(env.settingSources);
-}
-
-function isAgentNotFound(err: unknown): boolean {
-  const msg = err instanceof Error ? err.message : String(err);
-  return /not found/i.test(msg) || /unknown agent/i.test(msg);
-}
-
 export async function createAgent(opts: {
   cwd: string;
   model: string;
   mcpServers?: Record<string, McpServerConfig>;
+  budgetUsd?: number;
+  visualCritic?: boolean;
+  qualityBar?: string;
 }): Promise<{ agent: AgentInstance; agentId: string }> {
-  const apiKey = requireApiKey();
-  const agent = await Agent.create({
-    apiKey,
-    model: { id: opts.model },
-    local: {
-      cwd: opts.cwd,
-      settingSources: settingSources(),
-    },
-    ...(opts.mcpServers && Object.keys(opts.mcpServers).length > 0
-      ? { mcpServers: opts.mcpServers }
-      : {}),
+  requireApiKey();
+  const agent = new AtlasAgent({
+    cwd: opts.cwd,
+    model: resolveAtlasChatModel(opts.model),
+    mcpServers: opts.mcpServers,
+    budgetUsd: opts.budgetUsd,
+    visualCritic: opts.visualCritic,
+    qualityBar: opts.qualityBar,
   });
-  const agentId = agent.agentId;
-  return { agent, agentId };
+  return { agent, agentId: agent.agentId };
 }
 
 /**
- * Resume an existing agent, or recreate one if the local store lost it
- * (common after API restart / dispose).
+ * Return the in-memory agent, or create a fresh one after an API restart.
  */
 export async function getOrResumeAgent(
   sessionId: string,
@@ -53,6 +43,9 @@ export async function getOrResumeAgent(
     cwd: string;
     model: string;
     mcpServers?: Record<string, McpServerConfig>;
+    budgetUsd?: number;
+    visualCritic?: boolean;
+    qualityBar?: string;
   },
 ): Promise<{ agent: AgentInstance; agentId: string; recreated: boolean }> {
   const existing = registry.get(sessionId);
@@ -64,37 +57,19 @@ export async function getOrResumeAgent(
     };
   }
 
-  const apiKey = requireApiKey();
-  const mcpOpt =
-    opts.mcpServers && Object.keys(opts.mcpServers).length > 0
-      ? { mcpServers: opts.mcpServers }
-      : {};
-
-  try {
-    const agent = await Agent.resume(opts.agentId, {
-      apiKey,
-      local: {
-        cwd: opts.cwd,
-        settingSources: settingSources(),
-      },
-      ...mcpOpt,
-    });
-    registry.set(sessionId, { agent, currentRun: null });
-    return { agent, agentId: agent.agentId, recreated: false };
-  } catch (err) {
-    if (!isAgentNotFound(err)) throw err;
-
-    console.warn(
-      `Agent ${opts.agentId} not found — recreating for session ${sessionId}`,
-    );
-    const { agent, agentId } = await createAgent({
-      cwd: opts.cwd,
-      model: opts.model,
-      mcpServers: opts.mcpServers,
-    });
-    registry.set(sessionId, { agent, currentRun: null });
-    return { agent, agentId, recreated: true };
-  }
+  console.warn(
+    `Agent ${opts.agentId} not in memory — creating a new one for session ${sessionId}`,
+  );
+  const { agent, agentId } = await createAgent({
+    cwd: opts.cwd,
+    model: opts.model,
+    mcpServers: opts.mcpServers,
+    budgetUsd: opts.budgetUsd,
+    visualCritic: opts.visualCritic,
+    qualityBar: opts.qualityBar,
+  });
+  registry.set(sessionId, { agent, currentRun: null });
+  return { agent, agentId, recreated: true };
 }
 
 export async function resetAgentForSession(
@@ -103,6 +78,9 @@ export async function resetAgentForSession(
     cwd: string;
     model: string;
     mcpServers?: Record<string, McpServerConfig>;
+    budgetUsd?: number;
+    visualCritic?: boolean;
+    qualityBar?: string;
   },
 ): Promise<{ agent: AgentInstance; agentId: string }> {
   await disposeAgent(sessionId);

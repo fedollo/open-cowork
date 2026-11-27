@@ -14,18 +14,23 @@ import type {
   WorkspacePreset,
 } from "@open-loop/shared";
 import {
+  ATLAS_CHAT_MODELS,
+  DEFAULT_ATLAS_MODEL_ID,
   QUALITY_BAR_CATEGORY_LABELS,
   QUALITY_BAR_CATEGORY_ORDER,
+  isAtlasChatModel,
 } from "@open-loop/shared";
 import {
   cancelSession,
   createSession,
+  fetchHealth,
   fetchTree,
   fetchRecentFolders,
   pickFolder,
   fetchWorkspaceChanges,
   fetchWorkspaceContext,
   fetchWorkspaceDiff,
+  getQualityBarTemplateById,
   getSession,
   listIntegrations,
   listQualityBarTemplates,
@@ -40,6 +45,14 @@ import {
 import { GAUNTLET_EXAMPLE } from "./examples";
 import { GauntletBoard } from "./GauntletBoard";
 import { loadGauntletProgressFile } from "./gauntlet-progress";
+import {
+  cleanTemplateSearchParam,
+  clearPendingTemplate,
+  readPendingTemplate,
+  stashPendingTemplate,
+} from "./quality-bar-navigation";
+
+const initialPendingTemplate = readPendingTemplate();
 
 interface SessionSummary {
   id: string;
@@ -61,16 +74,55 @@ interface ActivityItem {
   isError?: boolean;
 }
 
+function runStateCopy(status: SessionStatus): { title: string; detail: string } {
+  switch (status) {
+    case "running":
+      return {
+        title: "Working",
+        detail: "Kimi is still editing the project. Leave this page open.",
+      };
+    case "done":
+      return {
+        title: "Finished",
+        detail: "This run has stopped. Nothing is working right now.",
+      };
+    case "error":
+      return {
+        title: "Stopped with an error",
+        detail: "This run is not continuing.",
+      };
+    default:
+      return {
+        title: "Waiting",
+        detail: "No run is in progress.",
+      };
+  }
+}
+
+function readBudget(raw: string): number | undefined {
+  const value = Number(raw.replace(",", "."));
+  if (!Number.isFinite(value) || value <= 0) return undefined;
+  return value;
+}
+
 export function App() {
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [cwdInput, setCwdInput] = useState("");
-  const [modelInput, setModelInput] = useState("composer-2.5");
-  const [qualityBar, setQualityBar] = useState("");
-  const [boundary, setBoundary] = useState("");
-  const [selectedTemplateId, setSelectedTemplateId] = useState("");
-  const [prompt, setPrompt] = useState("");
+  const [modelInput, setModelInput] = useState<string>(DEFAULT_ATLAS_MODEL_ID);
+  const [budgetInput, setBudgetInput] = useState("10");
+  const [visualCritic, setVisualCritic] = useState(false);
+  const [qualityBar, setQualityBar] = useState(
+    initialPendingTemplate?.qualityBar ?? "",
+  );
+  const [boundary, setBoundary] = useState(
+    initialPendingTemplate?.boundary ?? "",
+  );
+  const [selectedTemplateId, setSelectedTemplateId] = useState(
+    initialPendingTemplate?.id ?? "",
+  );
+  const [prompt, setPrompt] = useState(initialPendingTemplate?.goal ?? "");
   const [status, setStatus] = useState<SessionStatus>("idle");
   const [liveAssistant, setLiveAssistant] = useState("");
   const [activity, setActivity] = useState<ActivityItem[]>([]);
@@ -99,7 +151,7 @@ export function App() {
   >([]);
   const [enabledIntegrations, setEnabledIntegrations] = useState<
     IntegrationId[]
-  >([]);
+  >(initialPendingTemplate?.integrations ?? []);
   const [presets, setPresets] = useState<WorkspacePreset[]>([]);
   const [selectedPresetId, setSelectedPresetId] = useState("");
   const [presetNameInput, setPresetNameInput] = useState("");
@@ -191,21 +243,36 @@ export function App() {
     (id: string, source?: QualityBarTemplateRecord[]) => {
       const list = source ?? qualityBarTemplates;
       const template = list.find((t) => t.id === id);
-      if (!template) return;
+      if (!template) return false;
       setPrompt(template.goal);
       setQualityBar(template.qualityBar);
       setBoundary(template.boundary ?? "");
       setSelectedTemplateId(id);
+      if (template.integrations?.length) {
+        setEnabledIntegrations(template.integrations);
+      }
+      stashPendingTemplate({
+        id: template.id,
+        label: template.label,
+        goal: template.goal,
+        qualityBar: template.qualityBar,
+        boundary: template.boundary,
+        integrations: template.integrations,
+      });
       setError(null);
+      return true;
     },
     [qualityBarTemplates],
   );
 
   const applyWorkspacePreset = (preset: WorkspacePreset) => {
     setCwdInput(preset.cwd);
-    setModelInput(preset.model);
+    setModelInput(
+      isAtlasChatModel(preset.model) ? preset.model : DEFAULT_ATLAS_MODEL_ID,
+    );
     setQualityBar(preset.gauntlet?.qualityBar ?? "");
     setBoundary(preset.gauntlet?.boundary ?? "");
+    setVisualCritic(preset.gauntlet?.visualCritic === true);
     setEnabledIntegrations(preset.integrations ?? []);
     setSelectedTemplateId("");
     setError(null);
@@ -240,10 +307,12 @@ export function App() {
       const saved = await savePreset({
         name,
         cwd,
-        model: modelInput.trim() || "composer-2.5",
+        model: modelInput.trim() || DEFAULT_ATLAS_MODEL_ID,
         gauntlet: {
           qualityBar: qualityBar.trim(),
           boundary: boundary.trim() || undefined,
+          budgetUsd: readBudget(budgetInput),
+          visualCritic,
         },
         integrations: enabledIntegrations,
       });
@@ -278,17 +347,54 @@ export function App() {
     void refreshIntegrations();
     void refreshPresets();
     void refreshRecents();
-    void refreshQualityBarTemplates().then((list) => {
-      const params = new URLSearchParams(window.location.search);
-      const templateId = params.get("template");
-      if (templateId && list) {
-        applyQualityBarTemplate(templateId, list);
-        params.delete("template");
-        const qs = params.toString();
-        const next = `${window.location.pathname}${qs ? `?${qs}` : ""}`;
-        window.history.replaceState({}, "", next);
+    void refreshQualityBarTemplates();
+    void fetchHealth()
+      .then((health) => {
+        if (!health.defaultModel || !isAtlasChatModel(health.defaultModel)) return;
+        setModelInput((current) =>
+          current === DEFAULT_ATLAS_MODEL_ID ? health.defaultModel! : current,
+        );
+      })
+      .catch(() => undefined);
+
+    if (initialPendingTemplate) {
+      cleanTemplateSearchParam();
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const templateId = params.get("template");
+    if (!templateId) return;
+
+    void (async () => {
+      try {
+        let template: QualityBarTemplateRecord | undefined;
+        try {
+          template = await getQualityBarTemplateById(templateId);
+        } catch {
+          const list = await listQualityBarTemplates();
+          template = list.find((t) => t.id === templateId);
+        }
+        if (!template) {
+          setError(`Template "${templateId}" not found`);
+          return;
+        }
+        stashPendingTemplate({
+          id: template.id,
+          label: template.label,
+          goal: template.goal,
+          qualityBar: template.qualityBar,
+          boundary: template.boundary,
+          integrations: template.integrations,
+        });
+        applyQualityBarTemplate(template.id, [template]);
+        cleanTemplateSearchParam();
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Failed to load template",
+        );
       }
-    });
+    })();
   }, [
     refreshSessions,
     refreshIntegrations,
@@ -428,8 +534,11 @@ export function App() {
         const s = await getSession(id);
         setSession(s);
         setStatus(s.status);
+        setCwdInput(s.cwd);
         setQualityBar(s.gauntlet?.qualityBar ?? "");
         setBoundary(s.gauntlet?.boundary ?? "");
+        setVisualCritic(s.gauntlet?.visualCritic === true);
+        if (s.gauntlet?.budgetUsd) setBudgetInput(String(s.gauntlet.budgetUsd));
         setEnabledIntegrations(s.integrations ?? []);
         if (s.checkpointBeforeRun) {
           setCheckpointBeforeRun(true);
@@ -490,12 +599,25 @@ export function App() {
         gauntlet: {
           qualityBar: qualityBar.trim(),
           boundary: boundary.trim() || undefined,
+          budgetUsd: readBudget(budgetInput),
+          visualCritic,
         },
         integrations: enabledIntegrations,
         checkpointBeforeRun,
       });
+      clearPendingTemplate();
+      setSession({
+        ...created,
+        messages: [],
+        checkpoints: [],
+      });
+      setActiveId(created.id);
+      setCwdInput(created.cwd);
+      setStatus(created.status);
       await refreshSessions();
-      await selectSession(created.id);
+      void loadTree(created.cwd);
+      void loadGauntletProgress(created.cwd);
+      void loadWorkspaceContext(created.cwd);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create session");
     } finally {
@@ -655,6 +777,8 @@ export function App() {
             gauntlet: {
               qualityBar: qualityBar.trim(),
               boundary: boundary.trim() || undefined,
+              budgetUsd: readBudget(budgetInput),
+              visualCritic,
             },
             integrations: enabledIntegrations,
             messages: [...prev.messages, userMsg],
@@ -676,6 +800,8 @@ export function App() {
           gauntlet: {
             qualityBar: qualityBar.trim(),
             boundary: boundary.trim() || undefined,
+            budgetUsd: readBudget(budgetInput),
+            visualCritic,
           },
           integrations: enabledIntegrations,
           checkpointBeforeRun,
@@ -879,12 +1005,44 @@ export function App() {
           </div>
 
           <label htmlFor="model">Model</label>
-          <input
+          <select
             id="model"
-            value={modelInput}
+            className="sidebar-select"
+            value={
+              isAtlasChatModel(modelInput) ? modelInput : DEFAULT_ATLAS_MODEL_ID
+            }
             onChange={(e) => setModelInput(e.target.value)}
-            spellCheck={false}
+          >
+            {ATLAS_CHAT_MODELS.map((model) => (
+              <option key={model.id} value={model.id}>
+                {model.label}
+              </option>
+            ))}
+          </select>
+          <p className="hint-muted">Atlas Cloud</p>
+          <label htmlFor="budget">LLM budget (USD)</label>
+          <input
+            id="budget"
+            inputMode="decimal"
+            value={budgetInput}
+            onChange={(e) => setBudgetInput(e.target.value)}
           />
+          <p className="hint-muted">
+            Stops the next Kimi or GPT call when this amount is reached. One
+            call can go slightly over. Video tools are not included.
+          </p>
+          <label className="checkpoint-toggle">
+            <input
+              type="checkbox"
+              checked={visualCritic}
+              onChange={(e) => setVisualCritic(e.target.checked)}
+            />
+            <span>Visual critic</span>
+          </label>
+          <p className="hint-muted">
+            A second model looks at .open-loop/shots/before.png and after.png
+            and can reject the run. The builder cannot declare the bar met.
+          </p>
 
           <label htmlFor="qualityBarTemplate">Template</label>
               <select
@@ -1023,6 +1181,9 @@ export function App() {
           >
             {creating ? "Creating…" : "New session"}
           </button>
+          {showEmpty && error && (
+            <div className="error-banner sidebar-error">{error}</div>
+          )}
         </div>
 
         <div className="session-list">
@@ -1133,8 +1294,15 @@ export function App() {
                     {id}
                   </span>
                 ))}
-                <span className={`status-pill ${status}`}>{status}</span>
+                <span className={`status-pill ${status}`}>
+                  {runStateCopy(status).title}
+                </span>
               </div>
+            </div>
+
+            <div className={`run-banner ${status}`} role="status">
+              <strong>{runStateCopy(status).title}</strong>
+              <span>{runStateCopy(status).detail}</span>
             </div>
 
             <div className="gauntlet-hint">

@@ -1,5 +1,8 @@
+import { lintQualityBar } from "@open-loop/shared";
 import { Hono } from "hono";
 import { z } from "zod";
+import { generateQualityBarDraft } from "../quality-bars/generate.js";
+import { env } from "../env.js";
 import {
   createCustomQualityBar,
   deleteCustomQualityBar,
@@ -35,6 +38,89 @@ export const qualityBarsRoutes = new Hono();
 qualityBarsRoutes.get("/", async (c) => {
   const templates = await listAllQualityBars();
   return c.json({ templates });
+});
+
+const wizardDraftSchema = z.object({
+  label: z.string().optional(),
+  goal: z.string().optional(),
+  qualityBar: z.string().optional(),
+  boundary: z.string().optional(),
+});
+
+const generateSchema = z.object({
+  mode: z.enum(["create", "refine"]),
+  intent: z.string().min(10).optional(),
+  category: categorySchema,
+  integrations: z.array(integrationSchema).optional(),
+  referenceTemplateId: z.string().optional(),
+  draft: wizardDraftSchema.optional(),
+  refineInstruction: z.string().optional(),
+  model: z.string().optional(),
+});
+
+qualityBarsRoutes.post("/lint", async (c) => {
+  let body: {
+    id?: string;
+    label?: string;
+    goal?: string;
+    qualityBar?: string;
+    boundary?: string;
+  };
+  try {
+    body = z
+      .object({
+        id: z.string().optional(),
+        label: z.string().optional(),
+        goal: z.string().optional(),
+        qualityBar: z.string().optional(),
+        boundary: z.string().optional(),
+      })
+      .parse(await c.req.json());
+  } catch {
+    return c.json({ error: "Invalid body" }, 400);
+  }
+  return c.json(lintQualityBar(body));
+});
+
+qualityBarsRoutes.post("/generate", async (c) => {
+  if (!env.atlasApiKey.trim()) {
+    return c.json(
+      {
+        error:
+          "ATLASCLOUD_API_KEY is required for AI generation. Set it in .env and restart the API.",
+      },
+      503,
+    );
+  }
+  let body: z.infer<typeof generateSchema>;
+  try {
+    body = generateSchema.parse(await c.req.json());
+  } catch {
+    return c.json({ error: "Invalid body" }, 400);
+  }
+  if (body.mode === "create" && !body.intent?.trim()) {
+    return c.json({ error: "intent is required for create mode" }, 400);
+  }
+  if (body.mode === "refine" && !body.draft) {
+    return c.json({ error: "draft is required for refine mode" }, 400);
+  }
+  try {
+    const draft = await generateQualityBarDraft({
+      mode: body.mode,
+      intent: body.intent ?? "",
+      category: body.category,
+      integrations: body.integrations,
+      referenceTemplateId: body.referenceTemplateId,
+      draft: body.draft,
+      refineInstruction: body.refineInstruction,
+      model: body.model,
+    });
+    return c.json({ draft, lint: lintQualityBar(draft) });
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : "Generation failed";
+    return c.json({ error: message }, 502);
+  }
 });
 
 qualityBarsRoutes.get("/:id", async (c) => {
