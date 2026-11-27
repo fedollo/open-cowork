@@ -1,3 +1,11 @@
+export {
+  ATLAS_CHAT_MODELS,
+  DEFAULT_ATLAS_MODEL_ID,
+  isAtlasChatModel,
+  resolveAtlasChatModel,
+  type AtlasChatModelId,
+} from "./models.js";
+
 export type SessionStatus = "idle" | "running" | "error" | "done";
 
 export type SessionMode = "gauntlet";
@@ -7,6 +15,10 @@ export type IntegrationId = "github" | "atlascloud" | "replicate";
 export interface GauntletConfig {
   qualityBar: string;
   boundary?: string;
+  /** Hard cap on Atlas LLM spend for this session, in USD. */
+  budgetUsd?: number;
+  /** A second model must accept before/after screenshots before the run can finish. */
+  visualCritic?: boolean;
 }
 
 export interface IntegrationInfo {
@@ -181,12 +193,20 @@ export {
   QUALITY_BAR_CATEGORY_ORDER,
   QUALITY_BAR_TEMPLATES,
   getQualityBarTemplate,
+  lintQualityBar,
   listQualityBarTemplatesByCategory,
+  type LintQualityBarInput,
   type QualityBarCategory,
+  type QualityBarGeneratedDraft,
   type QualityBarIntegrationId,
+  type QualityBarLintIssue,
+  type QualityBarLintResult,
+  type QualityBarLintSeverity,
   type QualityBarSource,
   type QualityBarTemplate,
   type QualityBarTemplateRecord,
+  type QualityBarWizardMode,
+  type QualityBarWizardRequest,
 } from "./quality-bars/index.js";
 
 export interface FolderPickResponse {

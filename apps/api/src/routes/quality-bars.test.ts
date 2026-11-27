@@ -102,4 +102,41 @@ describe("quality-bars routes", () => {
     });
     assert.equal(res.status, 400);
   });
+
+  it("lints a draft via POST /lint", async () => {
+    const res = await qualityBarsRoutes.request("/lint", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        label: "Demo",
+        goal: "Ship a measurable outcome for the repo",
+        qualityBar:
+          "pnpm test passes; README command works in under 5 minutes for a fresh clone.",
+        boundary: "docs/ only",
+      }),
+    });
+    assert.equal(res.status, 200);
+    const body = (await res.json()) as { pass: boolean; score: number };
+    assert.equal(body.pass, true);
+    assert.ok(body.score >= 70);
+  });
+
+  it("returns 503 for generate without API key", async () => {
+    const original = env.atlasApiKey;
+    (env as { atlasApiKey: string }).atlasApiKey = "";
+    try {
+      const res = await qualityBarsRoutes.request("/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mode: "create",
+          intent: "Create a template for onboarding docs",
+          category: "dev",
+        }),
+      });
+      assert.equal(res.status, 503);
+    } finally {
+      (env as { atlasApiKey: string }).atlasApiKey = original;
+    }
+  });
 });

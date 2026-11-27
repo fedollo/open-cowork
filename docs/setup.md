@@ -42,7 +42,9 @@ CURSOR_API_KEY=your_key
 PORT=8787
 # Optional MCP integrations — see .env.example / README Integrations
 # GITHUB_TOKEN=          # https://github.com/settings/tokens
-# ATLASCLOUD_API_KEY=    # key only; base URL not needed for MCP
+# ATLASCLOUD_API_KEY=    # agent models + MCP
+# ATLASCLOUD_LLM_BASE_URL=https://api.atlascloud.ai/v1
+# DEFAULT_MODEL=moonshotai/kimi-k3.1-pro
 # REPLICATE_API_TOKEN=
 ```
 
@@ -85,7 +87,7 @@ Expected:
 ```
 
 - `"ok":false` — API not running.
-- `"hasApiKey":false` — UI works but agent sessions will fail until you set `CURSOR_API_KEY` and restart.
+- `"hasApiKey":false` — UI works but agent sessions will fail until you set `ATLASCLOUD_API_KEY` and restart.
 
 ## Dev server scripts
 

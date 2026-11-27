@@ -32,6 +32,16 @@ export async function getSession(id: string): Promise<Session> {
   return res.json();
 }
 
+export async function fetchHealth(): Promise<{
+  ok: boolean;
+  hasApiKey: boolean;
+  defaultModel?: string;
+}> {
+  const res = await fetch(`${BASE}/health`);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
 export async function listIntegrations(): Promise<IntegrationInfo[]> {
   const res = await fetch(`${BASE}/integrations`);
   if (!res.ok) throw new Error(await res.text());
@@ -290,6 +300,17 @@ export async function listQualityBarTemplates(): Promise<
   return body.templates;
 }
 
+export async function getQualityBarTemplateById(
+  id: string,
+): Promise<import("@open-loop/shared").QualityBarTemplateRecord> {
+  const res = await fetch(`${BASE}/quality-bars/${encodeURIComponent(id)}`);
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error((body as { error?: string }).error ?? res.statusText);
+  }
+  return res.json();
+}
+
 export async function createQualityBarTemplate(input: {
   id: string;
   label: string;
@@ -342,4 +363,41 @@ export async function deleteQualityBarTemplate(id: string): Promise<void> {
     const body = await res.json().catch(() => ({}));
     throw new Error((body as { error?: string }).error ?? res.statusText);
   }
+}
+
+export async function lintQualityBarRemote(input: {
+  id?: string;
+  label?: string;
+  goal?: string;
+  qualityBar?: string;
+  boundary?: string;
+}): Promise<import("@open-loop/shared").QualityBarLintResult> {
+  const res = await fetch(`${BASE}/quality-bars/lint`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error((body as { error?: string }).error ?? res.statusText);
+  }
+  return res.json();
+}
+
+export async function generateQualityBarDraft(
+  input: import("@open-loop/shared").QualityBarWizardRequest,
+): Promise<{
+  draft: import("@open-loop/shared").QualityBarGeneratedDraft;
+  lint: import("@open-loop/shared").QualityBarLintResult;
+}> {
+  const res = await fetch(`${BASE}/quality-bars/generate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error((body as { error?: string }).error ?? res.statusText);
+  }
+  return res.json();
 }

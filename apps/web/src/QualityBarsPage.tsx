@@ -14,8 +14,11 @@ import {
   listQualityBarTemplates,
   updateQualityBarTemplate,
 } from "./api";
+import { QualityBarWizard } from "./QualityBarWizard";
+import { navigateToSessionWithTemplate } from "./quality-bar-navigation";
 
 type Filter = "all" | "builtin" | "custom";
+type StudioView = "library" | "wizard";
 
 const EMPTY_DRAFT = {
   id: "",
@@ -46,6 +49,7 @@ function recordToDraft(t: QualityBarTemplateRecord) {
 }
 
 export function QualityBarsPage() {
+  const [view, setView] = useState<StudioView>("library");
   const [templates, setTemplates] = useState<QualityBarTemplateRecord[]>([]);
   const [filter, setFilter] = useState<Filter>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -171,7 +175,15 @@ export function QualityBarsPage() {
   const useInSession = () => {
     const id = isNew ? draft.id.trim() : selectedId;
     if (!id) return;
-    window.location.assign(`/?template=${encodeURIComponent(id)}`);
+    navigateToSessionWithTemplate({
+      id,
+      label: draft.label,
+      goal: draft.goal.trim(),
+      qualityBar: draft.qualityBar.trim(),
+      boundary: draft.boundary.trim() || undefined,
+      integrations:
+        draft.integrations.length > 0 ? draft.integrations : undefined,
+    });
   };
 
   const toggleIntegration = (id: IntegrationId) => {
@@ -197,20 +209,56 @@ export function QualityBarsPage() {
           </p>
         </div>
         <div className="studio-header-actions">
-          <button type="button" className="btn" onClick={handleNew}>
-            + New
-          </button>
-          <button
-            type="button"
-            className="btn btn-ghost"
-            disabled={!selected && !isNew}
-            onClick={handleDuplicate}
-          >
-            Duplicate
-          </button>
+          <div className="studio-view-tabs" role="tablist" aria-label="Studio mode">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={view === "library"}
+              className={`studio-view-tab${view === "library" ? " active" : ""}`}
+              onClick={() => setView("library")}
+            >
+              Library
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={view === "wizard"}
+              className={`studio-view-tab${view === "wizard" ? " active" : ""}`}
+              onClick={() => setView("wizard")}
+            >
+              Wizard
+            </button>
+          </div>
+          {view === "library" && (
+            <>
+              <button type="button" className="btn" onClick={handleNew}>
+                + New
+              </button>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                disabled={!selected && !isNew}
+                onClick={handleDuplicate}
+              >
+                Duplicate
+              </button>
+            </>
+          )}
         </div>
       </header>
 
+      {view === "wizard" ? (
+        <QualityBarWizard
+          templates={templates}
+          onCancel={() => setView("library")}
+          onSaved={(record) => {
+            void refresh().then(() => {
+              selectTemplate(record);
+              setView("library");
+            });
+          }}
+        />
+      ) : (
       <div className="studio-layout">
         <aside className="studio-list">
           <input
@@ -391,6 +439,7 @@ export function QualityBarsPage() {
           )}
         </main>
       </div>
+      )}
     </div>
   );
 }

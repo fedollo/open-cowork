@@ -288,3 +288,13 @@ export function listQualityBarTemplatesByCategory(
 ): QualityBarTemplate[] {
   return QUALITY_BAR_TEMPLATES.filter((t) => t.category === category);
 }
+
+export { lintQualityBar, type LintQualityBarInput } from "./lint.js";
+export type {
+  QualityBarGeneratedDraft,
+  QualityBarLintIssue,
+  QualityBarLintResult,
+  QualityBarLintSeverity,
+  QualityBarWizardMode,
+  QualityBarWizardRequest,
+} from "./wizard.js";

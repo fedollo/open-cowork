@@ -7,6 +7,7 @@ import type {
   IntegrationId,
   SessionCheckpoint,
 } from "@open-loop/shared";
+import { resolveAtlasChatModel } from "@open-loop/shared";
 import { env } from "../env.js";
 import { getSession, listSessions, saveSession } from "../store/sessions.js";
 import {
@@ -46,6 +47,8 @@ import {
 const gauntletSchema = z.object({
   qualityBar: z.string().min(1),
   boundary: z.string().optional(),
+  budgetUsd: z.number().positive().max(500).optional(),
+  visualCritic: z.boolean().optional(),
 });
 
 const integrationsSchema = z
@@ -147,7 +150,7 @@ sessionsRoutes.post("/", async (c) => {
     throw err;
   }
 
-  const model = body.model ?? env.defaultModel;
+  const model = resolveAtlasChatModel(body.model ?? env.defaultModel);
   const id = nanoid(12);
   const now = new Date().toISOString();
 
@@ -156,6 +159,9 @@ sessionsRoutes.post("/", async (c) => {
       cwd: body.cwd,
       model,
       mcpServers,
+      budgetUsd: body.gauntlet.budgetUsd,
+      visualCritic: body.gauntlet.visualCritic === true,
+      qualityBar: body.gauntlet.qualityBar,
     });
     registerAgent(id, agent);
 
@@ -172,6 +178,8 @@ sessionsRoutes.post("/", async (c) => {
       gauntlet: {
         qualityBar: body.gauntlet.qualityBar.trim(),
         boundary: body.gauntlet.boundary?.trim() || undefined,
+        budgetUsd: body.gauntlet.budgetUsd,
+        visualCritic: body.gauntlet.visualCritic === true,
       },
       integrations,
       checkpointBeforeRun: body.checkpointBeforeRun ?? false,
@@ -247,6 +255,8 @@ sessionsRoutes.post("/:id/messages", async (c) => {
     goal: userGoal,
     qualityBar: gauntletCfg.qualityBar,
     boundary: gauntletCfg.boundary,
+    budgetUsd: gauntletCfg.budgetUsd,
+    visualCritic: gauntletCfg.visualCritic === true,
     videoDirectMode,
   });
 
@@ -314,6 +324,9 @@ sessionsRoutes.post("/:id/messages", async (c) => {
             cwd: session.cwd,
             model: session.model,
             mcpServers,
+            budgetUsd: gauntletCfg.budgetUsd,
+            visualCritic: gauntletCfg.visualCritic === true,
+            qualityBar: gauntletCfg.qualityBar,
           });
           agent = reset.agent;
           agentId = reset.agentId;
@@ -331,6 +344,9 @@ sessionsRoutes.post("/:id/messages", async (c) => {
             cwd: session.cwd,
             model: session.model,
             mcpServers,
+            budgetUsd: gauntletCfg.budgetUsd,
+            visualCritic: gauntletCfg.visualCritic === true,
+            qualityBar: gauntletCfg.qualityBar,
           });
           agent = resumed.agent;
           agentId = resumed.agentId;
@@ -353,6 +369,8 @@ sessionsRoutes.post("/:id/messages", async (c) => {
         session.gauntlet = {
           qualityBar: gauntletCfg.qualityBar.trim(),
           boundary: gauntletCfg.boundary?.trim() || undefined,
+          budgetUsd: gauntletCfg.budgetUsd,
+          visualCritic: gauntletCfg.visualCritic === true,
         };
 
         const displayContent = `[Gauntlet]\nGoal: ${userGoal}\nBar: ${gauntletCfg.qualityBar}${
@@ -379,7 +397,14 @@ sessionsRoutes.post("/:id/messages", async (c) => {
         const sendOpts: {
           mcpServers?: typeof mcpServers;
           local?: { force?: boolean };
-        } = {};
+          budgetUsd?: number;
+          visualCritic?: boolean;
+          qualityBar?: string;
+        } = {
+          budgetUsd: gauntletCfg.budgetUsd,
+          visualCritic: gauntletCfg.visualCritic === true,
+          qualityBar: gauntletCfg.qualityBar,
+        };
         if (Object.keys(mcpServers).length > 0) {
           sendOpts.mcpServers = mcpServers;
         }

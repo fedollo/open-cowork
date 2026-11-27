@@ -4,15 +4,15 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "tsx watch src/main.ts",
     "build": "tsc",
-    "start": "node dist/index.js",
-    "test": "tsx --test src/agents/run-failure.test.ts src/agents/setting-sources.test.ts src/sessions/checkpoint.test.ts src/gauntlet/prompt.test.ts src/integrations/build-mcp.test.ts src/routes/fs.test.ts src/sessions/export-session.test.ts src/routes/workspace.test.ts src/routes/presets.test.ts src/routes/quality-bars.test.ts src/store/recents.test.ts"
+    "start": "node dist/main.js",
+    "test": "tsx --test src/agents/run-failure.test.ts src/agents/setting-sources.test.ts src/sessions/checkpoint.test.ts src/gauntlet/prompt.test.ts src/integrations/build-mcp.test.ts src/routes/fs.test.ts src/sessions/export-session.test.ts src/routes/workspace.test.ts src/routes/presets.test.ts src/routes/quality-bars.test.ts src/store/recents.test.ts src/models.test.ts src/agents/workspace-tools.test.ts src/agents/atlas-cost.test.ts src/agents/visual-critic.test.ts"
   },
   "dependencies": {
-    "@open-loop/shared": "workspace:*",
     "@cursor/sdk": "^1.0.0",
     "@hono/node-server": "^1.13.8",
+    "@open-loop/shared": "workspace:*",
     "dotenv": "^16.4.7",
     "hono": "^4.6.16",
     "nanoid": "^5.0.9",

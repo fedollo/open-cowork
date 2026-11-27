@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { serve } from "@hono/node-server";
+import { ATLAS_CHAT_MODELS } from "@open-loop/shared";
 import { initCursorSdk } from "./sdk-init.js";
 import { env } from "./env.js";
 import { sessionsRoutes } from "./routes/sessions.js";
@@ -25,7 +26,12 @@ app.use(
 );
 
 app.get("/health", (c) =>
-  c.json({ ok: true, hasApiKey: Boolean(env.apiKey) }),
+  c.json({
+    ok: true,
+    hasApiKey: Boolean(env.atlasApiKey),
+    defaultModel: env.defaultModel,
+    models: ATLAS_CHAT_MODELS,
+  }),
 );
 
 app.route("/sessions", sessionsRoutes);
@@ -41,9 +47,7 @@ app.onError((err, c) => {
 });
 
 console.log(`Open Loop API on http://localhost:${env.port}`);
-if (!env.apiKey) {
-  console.warn("WARNING: CURSOR_API_KEY not set — create/send will fail until configured.");
-}
+console.log(`Default model ${env.defaultModel}`);
 
 serve({ fetch: app.fetch, port: env.port });
 

@@ -20,6 +20,17 @@ describe("buildGauntletPrompt", () => {
     assert.match(out, /Do not stop after a fixed number of rounds/);
   });
 
+  it("tells the builder a separate model judges the screenshots", () => {
+    const out = buildGauntletPrompt({
+      goal: "Show the vine grab",
+      qualityBar: "The after shot shows the grab point",
+      visualCritic: true,
+    });
+    assert.match(out, /\.open-loop\/shots\/before\.png/);
+    assert.match(out, /\.open-loop\/shots\/after\.png/);
+    assert.match(out, /cannot declare the quality bar met/i);
+  });
+
   it("adds direct video guidance when videoDirectMode is set", () => {
     const out = buildGauntletPrompt({
       goal: "Generate a Seedance clip",

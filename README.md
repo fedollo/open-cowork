@@ -2,7 +2,7 @@
 
 A **local** web mini-app for agentic workspaces: pick a folder, describe a goal, and let an agent work on your files. Chat, file tree, and live activity in one UI.
 
-It uses Cursor’s agent runtime via the npm package `@cursor/sdk` (third-party dependency).
+Agent chat runs on Atlas Cloud. The sidebar offers **Kimi K3.1 Pro** and **GPT 6.2 Sol**. File tools run locally; optional MCP integrations stay available.
 
 ## Banner
 
@@ -60,7 +60,7 @@ Layout: **sidebar** (workspace + sessions) · **center** (chat) · **right** (**
 ### First run
 
 1. Under **Folder (absolute path)**, type an absolute folder path (e.g. `/Users/you/my-project`).
-2. Set **Model** if needed (default `composer-2.5`).
+2. Set **Model** if needed (Kimi K3.1 Pro or GPT 6.2 Sol, both on Atlas Cloud).
 3. Pick a **Template** or write a **Quality bar** — click **Use example** to pre-fill.
 4. Optionally enable **Integrations** (GitHub, Atlas Cloud, Replicate) — each needs its env key in `.env` (badge shows **ready** or **needs …**).
 5. Click **New session** → the **composer** appears at the bottom of the center column.
@@ -94,7 +94,7 @@ Optional MCP servers attached to a session. Enable toggles in the sidebar; keys 
 
 **GitHub token:** create a Personal Access Token at [github.com/settings/tokens](https://github.com/settings/tokens). Classic PATs (`ghp_…`) get automatic MCP tool filtering by scope; fine-grained PATs work too (API enforces permissions). Start with the least privilege you need (often `repo` + `read:org` for classic).
 
-**Atlas Cloud:** only `ATLASCLOUD_API_KEY` is used by MCP. A chat `baseURL` like `https://api.atlascloud.ai/v1` is for OpenAI-compatible SDK clients, not for this toggle.
+**Atlas Cloud:** `ATLASCLOUD_API_KEY` is the agent LLM key and the MCP key. Chat goes to `ATLASCLOUD_LLM_BASE_URL` (default `https://api.atlascloud.ai/v1`). The sidebar offers **Kimi K3.1 Pro** (`moonshotai/kimi-k3.1-pro`) and **GPT 6.2 Sol** (`openai/gpt-6.2-sol`).
 
 Enabling an integration without its key returns **400** with a clear message. Restart the API after editing `.env`. Stdio integrations need `npx` available on the machine that runs `apps/api`.
 
@@ -103,7 +103,7 @@ Enabling an integration without its key returns **400** with a clear message. Re
 | Package | Role |
 |---------|------|
 | `apps/web` | Vite + React UI |
-| `apps/api` | Hono + `@cursor/sdk` |
+| `apps/api` | Hono. Agent chat uses Atlas Cloud (`moonshotai/kimi-k3.1-pro`, `openai/gpt-6.2-sol`) |
 | `packages/shared` | Shared types |
 
 ## Roadmap
@@ -122,7 +122,7 @@ pnpm test   # unit + i18n + API smoke (if localhost:8787 is up)
 
 ## Troubleshooting
 
-- **`CURSOR_API_KEY not set` / 500 on create** → Set key in root `.env`, restart `pnpm dev`. Check `curl localhost:8787/health` → `"hasApiKey":true`.
+- **`ATLASCLOUD_API_KEY missing` / 500 on create** → Set the Atlas key in root `.env`, restart `pnpm dev`. Check `curl localhost:8787/health` → `"hasApiKey":true`.
 - **Port in use (8787/5173)** → `pnpm stop` or `pnpm restart`.
 - **UI up, API calls fail** → Wait for `Open Loop API on http://localhost:8787` before opening the UI; `pnpm dev` must run both API and web.
 - **Empty file tree** → Path must be **absolute** and exist.

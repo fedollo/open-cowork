@@ -385,6 +385,23 @@ Theme: **Open Loop is a Gauntlet studio** — quality bar, builder/critic loop, 
 
 ---
 
+### 11b. Quality Bar Wizard + LLM generation
+
+- [x] **Shipped** (v0.5.2)
+
+**Problem:** CRUD alone does not help users write *inspectable* quality bars; templates need concrete criteria and boundaries.
+
+**Solution:**
+
+- Tab **Wizard** on `/quality-bars`: intent → category/integrations/reference → AI draft → lint score → refine → save
+- `POST /quality-bars/generate` — one-shot Cursor agent (no session) with few-shot exemplars
+- `POST /quality-bars/lint` — heuristic bar linter (score 0–100, errors/warns)
+- Refine mode: quick prompts (“more measurable”, “tighten boundary”)
+
+**Acceptance:** Non-expert can describe intent, get a draft that passes lint (or see what to fix), save to `custom/`, and start a Gauntlet session.
+
+---
+
 ### 12. Gauntlet polish (C4–C5, E)
 
 - [ ] **Planned**
